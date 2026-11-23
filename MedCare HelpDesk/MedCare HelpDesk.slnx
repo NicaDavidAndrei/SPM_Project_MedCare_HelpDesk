@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="MedCare HelpDesk/MedCare HelpDesk.csproj" />
+  <Project Path="MedCareHelpDesk.Tests/MedCareHelpDesk.Tests.csproj" />
+</Solution>

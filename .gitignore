@@ -1,0 +1,61 @@
+# Build artifacts & .NET
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.nupkg
+*.snupkg
+*.binlog
+[Tt]est[Rr]esult*/
+TestResult.xml
+CodeCoverage/
+*.coverage
+*.coveragexml
+
+# IDE
+.vs/
+.idea/
+.vscode/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# SQLite local DBs & backups
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.bak
+
+# Local secrets & uploads
+appsettings.Local.json
+.env
+**/wwwroot/uploads/avatars/*
+!**/wwwroot/uploads/avatars/.gitkeep
+**/wwwroot/uploads/tickets/*
+!**/wwwroot/uploads/tickets/.gitkeep
+*.mlnet.log
+
+# OS & Office temp files
+~$*
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
