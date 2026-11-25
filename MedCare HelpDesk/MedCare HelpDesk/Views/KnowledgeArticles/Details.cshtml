@@ -1,0 +1,21 @@
+@model MedCare_HelpDesk.Models.KnowledgeArticle
+@{
+    ViewData["Title"] = "Guide Details";
+    bool canManage = ViewBag.CanManage is bool b && b;
+}
+
+<div class="container main-container">
+    <div class="mc-card col-md-8 mx-auto">
+        <h3 class="fw-bold mb-1"><i class="bi @Model.IconClass @Model.ColorClass me-2"></i>@Model.Title</h3>
+        <p class="text-muted small mb-3">@Model.Category &bull; Author: <strong>@Model.AuthorName</strong> &bull; Updated: @Model.UpdatedAt.ToString("dd MMM yyyy")</p>
+        <div class="p-3 bg-light-subtle rounded border">@Html.Raw(Model.Content)</div>
+        <div class="mt-4 d-flex gap-2">
+            @if (canManage)
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary rounded-pill px-4">Edit Guide</a>
+                <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger rounded-pill px-4">Delete</a>
+            }
+            <a asp-action="Index" class="btn btn-light border rounded-pill px-4 ms-auto">Back to List</a>
+        </div>
+    </div>
+</div>

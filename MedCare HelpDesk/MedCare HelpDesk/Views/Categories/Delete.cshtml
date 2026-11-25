@@ -1,0 +1,13 @@
+@model MedCare_HelpDesk.Models.Category
+@{ ViewData["Title"] = "Remove Category"; }
+<div class="container main-container mt-4">
+    <div class="content-card col-md-6 mx-auto border border-danger">
+        <h3 class="text-danger">Remove Category: @Model.Name?</h3>
+        <p>Categories referenced by tickets are automatically soft-deactivated to preserve ticket history.</p>
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="Id" />
+            <button type="submit" class="btn btn-danger">Confirm</button>
+            <a asp-action="Index" class="btn btn-light ms-2">Cancel</a>
+        </form>
+    </div>
+</div>

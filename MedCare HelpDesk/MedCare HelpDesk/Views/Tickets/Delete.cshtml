@@ -1,0 +1,17 @@
+@model MedCare_HelpDesk.Models.Ticket
+
+@{
+    ViewData["Title"] = "Delete Ticket";
+}
+
+<div class="container main-container mt-4">
+    <div class="content-card col-md-6 mx-auto border border-danger">
+        <h3 class="text-danger mb-3">Delete Ticket @(Model.TicketCode ?? $"#{Model.Id}")?</h3>
+        <p>Are you sure you want to permanently remove <strong>@Model.Title</strong> and its comments/attachments?</p>
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="Id" />
+            <button type="submit" class="btn btn-danger">Confirm Delete</button>
+            <a asp-action="Index" class="btn btn-light ms-2">Cancel</a>
+        </form>
+    </div>
+</div>

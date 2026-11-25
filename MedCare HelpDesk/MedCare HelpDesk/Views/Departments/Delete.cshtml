@@ -1,0 +1,13 @@
+@model MedCare_HelpDesk.Models.Department
+@{ ViewData["Title"] = "Deactivate or Delete Ward"; }
+<div class="container main-container mt-4">
+    <div class="content-card col-md-6 mx-auto border border-danger">
+        <h3 class="text-danger">Remove Ward: @Model.Name?</h3>
+        <p>If users or tickets reference this ward, MedCare HelpDesk automatically soft-deactivates it instead of deleting historical records (FR-06).</p>
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="Id" />
+            <button type="submit" class="btn btn-danger">Confirm</button>
+            <a asp-action="Index" class="btn btn-light ms-2">Cancel</a>
+        </form>
+    </div>
+</div>

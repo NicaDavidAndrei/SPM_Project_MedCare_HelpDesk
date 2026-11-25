@@ -1,0 +1,14 @@
+@model MedCare_HelpDesk.Models.Department
+@{ ViewData["Title"] = "Ward Details"; }
+<div class="container main-container mt-4">
+    <div class="content-card col-md-6 mx-auto">
+        <h3>@Model.Name (@Model.WardCode)</h3>
+        <dl class="row mt-3">
+            <dt class="col-sm-4">Extension</dt><dd class="col-sm-8">@Model.WardPhoneExtension</dd>
+            <dt class="col-sm-4">Critical Care</dt><dd class="col-sm-8">@(Model.IsCriticalCare ? "Yes (2h SLA)" : "No")</dd>
+            <dt class="col-sm-4">Status</dt><dd class="col-sm-8">@(Model.IsActive ? "Active" : "Inactive")</dd>
+        </dl>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+        <a asp-action="Index" class="btn btn-light ms-2">Back</a>
+    </div>
+</div>

@@ -1,0 +1,118 @@
+@model IEnumerable<MedCare_HelpDesk.Models.KnowledgeArticle>
+
+@{
+    ViewData["Title"] = "MedCare Knowledge Base";
+    var categoryIds = ViewBag.CategoryIds as Dictionary<string, int> ?? new Dictionary<string, int>();
+    var groups = Model.GroupBy(a => a.Category ?? "General").ToList();
+    bool canOpenTicket = User.Identity?.IsAuthenticated == true;
+}
+
+<div class="container main-container">
+    <div id="kb-ajax-wrapper">
+        <div class="mc-clinical-hero mb-4 py-4">
+            <div class="text-center">
+                <h2 class="fw-bold mb-2"><i class="bi bi-journal-medical me-2"></i>MedCare Self-Service Knowledge Base</h2>
+                <p class="opacity-75 mb-4">Step-by-step clinical equipment, HIS/PACS software, and hospital network guides.</p>
+
+                <form id="searchForm" asp-controller="KnowledgeBase" asp-action="Index" method="get" class="row justify-content-center">
+                    <div class="col-md-9 col-lg-7">
+                        <div class="input-group shadow">
+                            <input type="text" name="searchString" value="@ViewData["CurrentSearch"]" class="form-control border-0 px-3" placeholder="Search guides (e.g., SpO2, ventilator, PACS, printer, Wi-Fi)...">
+                            <button class="btn btn-dark px-4" type="submit"><i class="bi bi-search me-1"></i> Search</button>
+                            <a asp-action="Index" class="btn btn-danger px-3 ajax-link">Clear</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-warning text-center"><i class="bi bi-exclamation-triangle me-2"></i>No troubleshooting guides found matching your query.</div>
+        }
+
+        <div class="row g-4 justify-content-center">
+            @foreach (var grp in groups)
+            {
+                <div class="@(groups.Count == 1 ? "col-lg-8 col-md-10" : "col-md-6")">
+                    <div class="mc-card h-100">
+                        <div class="mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
+                            <h6 class="text-uppercase fw-bold mb-0"><i class="bi bi-folder2-open text-primary me-2"></i>@grp.Key</h6>
+                            <a asp-action="Index" asp-route-category="@grp.Key" class="btn btn-sm btn-light border rounded-pill ajax-link">@grp.Count() Guides</a>
+                        </div>
+                        <ul class="list-unstyled mb-0" style="line-height: 2.1;">
+                            @foreach (var item in grp)
+                            {
+                                <li>
+                                    <a href="#" data-bs-toggle="modal" data-bs-target="#modal-@item.Id" class="text-decoration-none fw-semibold">
+                                        <i class="bi @item.IconClass @item.ColorClass me-2"></i>@item.Title
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @foreach (var item in Model)
+        {
+            int catId = categoryIds.TryGetValue(item.Category ?? "", out var foundId) ? foundId : 0;
+            <div class="modal fade" id="modal-@item.Id" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header">
+                            <div>
+                                <h5 class="modal-title fw-bold @item.ColorClass"><i class="bi @item.IconClass me-2"></i>@item.Title</h5>
+                                <small class="text-muted">Category: @item.Category &bull; Author: @item.AuthorName &bull; Updated: @item.UpdatedAt.ToString("dd MMM yyyy")</small>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body p-4">@Html.Raw(item.Content)</div>
+                        <div class="modal-footer d-flex justify-content-between">
+                            @if (canOpenTicket)
+                            {
+                                <a asp-controller="Tickets" asp-action="SubmitTicket" asp-route-categoryId="@(catId > 0 ? catId : null)" class="btn btn-outline-primary rounded-pill">
+                                    <i class="bi bi-ticket-detailed me-1"></i> Still Need Help? Open Ticket
+                                </a>
+                            }
+                            else
+                            {
+                                <small class="text-muted">Guest read-only mode &bull; <a asp-controller="Account" asp-action="Login">Sign In</a> to open a ticket &bull; Hotline: +40 251-XXX-911</small>
+                            }
+                            <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+<partial name="_BackToTop" />
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $(document).on('click', '.ajax-link', function (e) {
+                e.preventDefault();
+                fetchWithAjax($(this).attr('href'));
+            });
+            $(document).on('submit', '#searchForm', function (e) {
+                e.preventDefault();
+                fetchWithAjax($(this).attr('action') + '?' + $(this).serialize());
+            });
+            function fetchWithAjax(url) {
+                $.get(url, function (data) {
+                    const $parsed = $('<div>').append($.parseHTML(data));
+                    const $newContent = $parsed.find('#kb-ajax-wrapper').html();
+                    if ($newContent) {
+                        $('#kb-ajax-wrapper').html($newContent);
+                        window.history.pushState(null, '', url);
+                    } else {
+                        window.location.href = url;
+                    }
+                });
+            }
+        });
+    </script>
+}

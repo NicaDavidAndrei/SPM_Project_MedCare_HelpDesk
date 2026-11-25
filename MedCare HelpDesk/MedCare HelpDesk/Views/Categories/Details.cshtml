@@ -1,0 +1,14 @@
+@model MedCare_HelpDesk.Models.Category
+@{ ViewData["Title"] = "Category Details"; }
+<div class="container main-container mt-4">
+    <div class="content-card col-md-6 mx-auto">
+        <h3>@Model.Name</h3>
+        <dl class="row mt-3">
+            <dt class="col-sm-4">Specialty</dt><dd class="col-sm-8">@Model.SpecialtyTag</dd>
+            <dt class="col-sm-4">Description</dt><dd class="col-sm-8">@Model.Description</dd>
+            <dt class="col-sm-4">Active</dt><dd class="col-sm-8">@Model.IsActive</dd>
+        </dl>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+        <a asp-action="Index" class="btn btn-light ms-2">Back</a>
+    </div>
+</div>

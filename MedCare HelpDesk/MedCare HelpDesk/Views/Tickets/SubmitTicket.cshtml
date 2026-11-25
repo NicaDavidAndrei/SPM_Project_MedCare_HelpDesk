@@ -1,0 +1,370 @@
+@model MedCare_HelpDesk.Models.SubmitTicketViewModel
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Report Hospital Issue";
+    var criticalWardIds = ViewBag.CriticalWardIds as List<int> ?? new List<int>();
+    var categorySpecialties = ViewBag.CategorySpecialties as Dictionary<int, string> ?? new Dictionary<int, string>();
+}
+
+<div class="container main-container">
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="mc-card">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div>
+                        <h3 class="fw-bold mb-0"><i class="bi bi-plus-circle-fill text-primary me-2"></i>Report Clinical or IT Fault</h3>
+                        <small class="text-muted">Single-screen intake &bull; Auto-classified by ML.NET &amp; deflected by TF-IDF Knowledge Base</small>
+                    </div>
+                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-3 py-2">&lt;60s Clinical Entry</span>
+                </div>
+
+                <!-- Mandatory Zero Patient PII Warning Banner (FR-10 / Risk R9) -->
+                <div class="alert alert-danger border-danger border-2 d-flex align-items-center mb-3" role="alert">
+                    <i class="bi bi-shield-exclamation fs-3 text-danger me-3"></i>
+                    <div class="small">
+                        <strong>ZERO PATIENT PII POLICY:</strong> Strictly describe technical equipment, software, or ward defects. <strong>Never enter patient names, CNP, or diagnoses.</strong>
+                    </div>
+                </div>
+
+                <!-- Critical Care Ward Hint Banner (FR-08) -->
+                <div id="criticalWardBanner" class="alert alert-warning border-warning d-none align-items-center mb-3" role="alert">
+                    <i class="bi bi-heart-pulse-fill fs-4 text-danger me-3"></i>
+                    <div class="small">
+                        <strong>Critical Care Unit Selected (ATI / Emergency UPU):</strong> Active bedside failures qualify for <strong>Critical (2-Hour SLA)</strong> priority.
+                    </div>
+                </div>
+
+                <form asp-action="SubmitTicket" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-8 mb-3 mb-md-0">
+                            <label asp-for="Title" class="form-label fw-bold">Issue Summary Title <span class="text-danger">*</span></label>
+                            <input asp-for="Title" id="Title" class="form-control" placeholder="E.g., ATI ventilator pressure alarm or UPU printer jam">
+                            <span asp-validation-for="Title" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="EquipmentTag" class="form-label fw-bold">Equipment / Asset Tag</label>
+                            <input asp-for="EquipmentTag" class="form-control mc-mono" placeholder="E.g., VENT-ATI-02">
+                            <span asp-validation-for="EquipmentTag" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label asp-for="DepartmentId" class="form-label fw-bold">Hospital Ward <span class="text-danger">*</span></label>
+                            <select asp-for="DepartmentId" class="form-select" asp-items="ViewBag.DepartmentList" id="DepartmentId">
+                                <option value="">Select ward...</option>
+                            </select>
+                            <span asp-validation-for="DepartmentId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label asp-for="CategoryId" class="form-label fw-bold mb-0">Category <span class="text-danger">*</span></label>
+                                <span id="aiCategoryBadge" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill d-none" style="font-size:0.7rem;">
+                                    <i class="bi bi-stars me-1"></i>AI
+                                </span>
+                            </div>
+                            <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryList" id="CategoryId">
+                                <option value="">Select category...</option>
+                            </select>
+                            <small id="specialtyHint" class="text-muted d-block mt-1"></small>
+                            <span asp-validation-for="CategoryId" class="text-danger small d-block"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label asp-for="Priority" class="form-label fw-bold mb-0">Urgency / SLA <span class="text-danger">*</span></label>
+                                <span id="aiPriorityBadge" class="badge bg-info-subtle text-info border border-info-subtle rounded-pill d-none" style="font-size:0.7rem;">
+                                    <i class="bi bi-stars me-1"></i>AI
+                                </span>
+                            </div>
+                            <select asp-for="Priority" class="form-select" id="Priority">
+                                <option value="Critical">Critical (2 Hours SLA)</option>
+                                <option value="High">High (4 Hours SLA)</option>
+                                <option value="Medium" selected>Medium (12 Hours SLA)</option>
+                                <option value="Low">Low (24 Hours SLA)</option>
+                            </select>
+                            <span asp-validation-for="Priority" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <button type="button" id="btnAutoPredict" class="btn btn-outline-primary btn-sm rounded-pill px-3" onclick="runAiPrediction(true)">
+                            <i class="bi bi-robot me-1"></i> Auto-Detect Category &amp; Urgency (ML.NET)
+                        </button>
+                        <span id="aiStatusNotice" class="small text-muted d-none"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label fw-bold">Technical Symptom Description <span class="text-danger">*</span></label>
+                        <textarea asp-for="Description" id="Description" class="form-control" rows="4" placeholder="Describe error codes, room/bay number, and backup status..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Diagnostic Photos or Error Logs (Optional)</label>
+                        <input class="form-control" type="file" name="Attachments" accept=".jpg,.jpeg,.png,.pdf" multiple>
+                        <div class="form-text">Allowed: <strong>.jpg, .jpeg, .png, .pdf</strong> (max 5 MB per file, validated via magic bytes).</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center border-top pt-3 flex-wrap gap-2">
+                        <small class="text-muted"><i class="bi bi-telephone-fill text-danger me-1"></i>Wi-Fi down? Call <strong class="mc-mono">+40 251-XXX-911</strong></small>
+                        <div class="d-flex gap-2">
+                            <a asp-action="MyTickets" class="btn btn-light border rounded-pill px-3">Cancel</a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4"><i class="bi bi-send me-1"></i> Submit Ticket</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Co-Pilot Panel: Live TF-IDF Knowledge Suggestions & 24/7 SLA Reference -->
+        <div class="col-lg-4 d-flex flex-column gap-4">
+            <div id="kbSuggestionsContainer" class="mc-card border-primary border d-none">
+                <h6 class="fw-bold text-primary mb-2">
+                    <i class="bi bi-journal-medical me-1"></i>Matching Help Guides (TF-IDF)
+                </h6>
+                <p class="text-muted small mb-3">Quick 3-step hospital guides matching your issue keywords:</p>
+                <div id="kbSuggestionsList" class="list-group list-group-flush"></div>
+            </div>
+
+            <div class="mc-card">
+                <h6 class="fw-bold mb-3"><i class="bi bi-clock-history text-primary me-2"></i>24/7 Clinical SLA Timers</h6>
+                <div class="d-flex flex-column gap-2 small">
+                    <div class="p-2 rounded border d-flex justify-content-between align-items-center">
+                        <span class="badge bg-critical">Critical</span>
+                        <span class="fw-bold mc-mono">2 Hours</span>
+                    </div>
+                    <div class="p-2 rounded border d-flex justify-content-between align-items-center">
+                        <span class="badge bg-danger">High</span>
+                        <span class="fw-bold mc-mono">4 Hours</span>
+                    </div>
+                    <div class="p-2 rounded border d-flex justify-content-between align-items-center">
+                        <span class="badge bg-info text-dark">Medium</span>
+                        <span class="fw-bold mc-mono">12 Hours</span>
+                    </div>
+                    <div class="p-2 rounded border d-flex justify-content-between align-items-center">
+                        <span class="badge bg-secondary">Low</span>
+                        <span class="fw-bold mc-mono">24 Hours</span>
+                    </div>
+                </div>
+                <p class="text-muted small mt-3 mb-0">Clocks start immediately upon submission and never pause overnight.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Quick KB Reading -->
+<div class="modal fade" id="kbModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-book-half text-primary me-2"></i><span id="kbModalTitle"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <span id="kbModalCategory" class="badge bg-secondary mb-3"></span>
+                <div id="kbModalContent" class="p-3 bg-light-subtle rounded border"></div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <a asp-action="MyTickets" class="btn btn-outline-success rounded-pill"><i class="bi bi-check-circle-fill me-1"></i> Resolved Myself (Cancel)</a>
+                <button type="button" class="btn btn-primary rounded-pill" data-bs-dismiss="modal">Continue Submission</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        const criticalWardIds = @Html.Raw(JsonSerializer.Serialize(criticalWardIds));
+        const categorySpecialties = @Html.Raw(JsonSerializer.Serialize(categorySpecialties));
+
+        let kbDebounceTimer = null;
+        let aiPredictionDebounceTimer = null;
+        let currentSuggestions = [];
+        let userManuallyChangedCategory = ($('#CategoryId').val() || '') !== '';
+        let userManuallyChangedPriority = false;
+        let lastPredictedCategory = '';
+        let lastPredictedPriority = '';
+
+        function checkCriticalWard() {
+            const wardId = parseInt($('#DepartmentId').val(), 10);
+            if (criticalWardIds.includes(wardId)) {
+                $('#criticalWardBanner').removeClass('d-none').addClass('d-flex');
+            } else {
+                $('#criticalWardBanner').addClass('d-none').removeClass('d-flex');
+            }
+        }
+
+        function updateSpecialtyHint() {
+            const catId = $('#CategoryId').val();
+            const spec = categorySpecialties[catId];
+            $('#specialtyHint').text(spec ? ('Routed to: ' + spec) : '');
+        }
+
+        function updateAiBadges() {
+            const selectedCatText = $('#CategoryId option:selected').text().trim().toLowerCase();
+            if (lastPredictedCategory && selectedCatText === lastPredictedCategory.trim().toLowerCase()) {
+                $('#aiCategoryBadge').removeClass('d-none');
+            } else {
+                $('#aiCategoryBadge').addClass('d-none');
+            }
+
+            const selectedPrio = ($('#Priority').val() || '').trim().toLowerCase();
+            if (lastPredictedPriority && selectedPrio === lastPredictedPriority.trim().toLowerCase()) {
+                $('#aiPriorityBadge').removeClass('d-none');
+            } else {
+                $('#aiPriorityBadge').addClass('d-none');
+            }
+        }
+
+        function fetchKbSuggestions() {
+            const query = (($('#Title').val() || '') + ' ' + ($('#Description').val() || '')).trim();
+            if (query.length < 3) {
+                $('#kbSuggestionsContainer').addClass('d-none');
+                $('#kbSuggestionsList').empty();
+                return;
+            }
+
+            $.ajax({
+                url: '/Tickets/GetKbSuggestions',
+                type: 'GET',
+                data: { query: query },
+                success: function (data) {
+                    currentSuggestions = data || [];
+                    const $list = $('#kbSuggestionsList').empty();
+                    if (currentSuggestions.length > 0) {
+                        currentSuggestions.forEach(function (item, idx) {
+                            $list.append(`
+                                <div class="list-group-item px-0 py-2">
+                                    <div class="fw-bold small mb-1">${item.title}</div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="badge bg-secondary-subtle text-secondary border me-1">${item.category}</span>
+                                            <span class="badge bg-success-subtle text-success border rounded-pill">${item.similarity}%</span>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill py-0 px-2" onclick="showKbModal(${idx})">Read</button>
+                                    </div>
+                                </div>`);
+                        });
+                        $('#kbSuggestionsContainer').removeClass('d-none');
+                    } else {
+                        $('#kbSuggestionsContainer').addClass('d-none');
+                    }
+                },
+                error: function () {
+                    $('#kbSuggestionsContainer').addClass('d-none');
+                }
+            });
+        }
+
+        function showKbModal(idx) {
+            const a = currentSuggestions[idx];
+            if (!a) return;
+            $('#kbModalTitle').text(a.title);
+            $('#kbModalCategory').text(a.category);
+            $('#kbModalContent').html(a.content);
+            new bootstrap.Modal(document.getElementById('kbModal')).show();
+        }
+
+        function runAiPrediction(force = false) {
+            const title = ($('#Title').val() || '').trim();
+            const desc = ($('#Description').val() || '').trim();
+            if (title.length < 3 && desc.length < 3) return;
+
+            if (force) {
+                userManuallyChangedCategory = false;
+                userManuallyChangedPriority = false;
+            }
+
+            const $btn = $('#btnAutoPredict');
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Detecting...');
+
+            $.ajax({
+                url: '/Tickets/PredictTicketFields',
+                type: 'GET',
+                data: { title: title, description: desc },
+                success: function (res) {
+                    $btn.prop('disabled', false).html('<i class="bi bi-robot me-1"></i> Auto-Detect Category &amp; Urgency (ML.NET)');
+                    if (!res || !res.predictedCategory) return;
+
+                    lastPredictedCategory = res.predictedCategory;
+                    lastPredictedPriority = res.predictedPriority || '';
+
+                    if (force || !userManuallyChangedCategory) {
+                        $('#CategoryId option').each(function () {
+                            if ($(this).text().trim().toLowerCase() === res.predictedCategory.trim().toLowerCase()) {
+                                $('#CategoryId').val($(this).val());
+                                $('span[data-valmsg-for="CategoryId"]').text('');
+                                $('#CategoryId').removeClass('input-validation-error is-invalid');
+                                updateSpecialtyHint();
+                            }
+                        });
+                    }
+
+                    if ((force || !userManuallyChangedPriority) && res.predictedPriority) {
+                        $('#Priority').val(res.predictedPriority);
+                        $('span[data-valmsg-for="Priority"]').text('');
+                        $('#Priority').removeClass('input-validation-error is-invalid');
+                    }
+
+                    updateAiBadges();
+                    $('#aiStatusNotice').removeClass('d-none').html(
+                        `<i class="bi bi-check-circle-fill text-success me-1"></i>AI Recommended: <strong>${res.predictedCategory}</strong> &bull; <strong>${res.predictedPriority}</strong> (${res.confidencePercentage}%)`
+                    );
+                },
+                error: function () {
+                    $btn.prop('disabled', false).html('<i class="bi bi-robot me-1"></i> Auto-Detect Category &amp; Urgency (ML.NET)');
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            checkCriticalWard();
+            updateSpecialtyHint();
+
+            $('#DepartmentId').on('change', checkCriticalWard);
+
+            $('#CategoryId').on('change', function (e) {
+                if (e.originalEvent) {
+                    userManuallyChangedCategory = true;
+                }
+                updateSpecialtyHint();
+                updateAiBadges();
+            });
+
+            $('#Priority').on('change', function (e) {
+                if (e.originalEvent) {
+                    userManuallyChangedPriority = true;
+                }
+                updateAiBadges();
+            });
+
+            $('#Title, #Description').on('input keyup change', function () {
+                clearTimeout(kbDebounceTimer);
+                kbDebounceTimer = setTimeout(fetchKbSuggestions, 280);
+
+                clearTimeout(aiPredictionDebounceTimer);
+                aiPredictionDebounceTimer = setTimeout(function () {
+                    if (!userManuallyChangedCategory || !userManuallyChangedPriority) {
+                        runAiPrediction(false);
+                    }
+                }, 400);
+            });
+
+            $('#Title, #Description').on('blur', function () {
+                if (!userManuallyChangedCategory || !userManuallyChangedPriority) {
+                    runAiPrediction(false);
+                }
+            });
+
+            if ((($('#Title').val() || '') + ' ' + ($('#Description').val() || '')).trim().length >= 3) {
+                fetchKbSuggestions();
+            }
+        });
+    </script>
+}

@@ -1,0 +1,17 @@
+@model MedCare_HelpDesk.Models.User
+
+@{
+    ViewData["Title"] = "Delete Staff Account";
+}
+
+<div class="container main-container mt-4">
+    <div class="content-card col-md-6 mx-auto border border-danger">
+        <h3 class="text-danger mb-3">Delete Account: @Model.FirstName @Model.LastName?</h3>
+        <p>Consider using <strong>Deactivate</strong> on the Users list instead if you want to retain historical tickets intact (FR-04).</p>
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="Id" />
+            <button type="submit" class="btn btn-danger">Confirm Permanent Delete</button>
+            <a asp-action="Index" class="btn btn-light ms-2">Cancel</a>
+        </form>
+    </div>
+</div>

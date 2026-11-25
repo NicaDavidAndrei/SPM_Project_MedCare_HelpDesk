@@ -1,0 +1,20 @@
+@model MedCare_HelpDesk.Models.Department
+@{ ViewData["Title"] = "Add Hospital Ward"; }
+<div class="container main-container mt-4">
+    <div class="content-card col-md-6 mx-auto">
+        <h3 class="mb-3">Add Hospital Ward</h3>
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+            <div class="mb-3"><label asp-for="Name" class="form-label fw-bold"></label><input asp-for="Name" class="form-control" required /></div>
+            <div class="row mb-3">
+                <div class="col-md-6"><label asp-for="WardCode" class="form-label fw-bold"></label><input asp-for="WardCode" class="form-control" placeholder="e.g., ATI" /></div>
+                <div class="col-md-6"><label asp-for="WardPhoneExtension" class="form-label fw-bold"></label><input asp-for="WardPhoneExtension" class="form-control" placeholder="Ext. 109" /></div>
+            </div>
+            <div class="form-check form-switch mb-2"><input asp-for="IsCriticalCare" class="form-check-input" /><label asp-for="IsCriticalCare" class="form-check-label">Critical Care Unit (shows 2h Critical SLA hint)</label></div>
+            <div class="form-check form-switch mb-3"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label">Ward Active</label></div>
+            <button type="submit" class="btn btn-primary">Create</button>
+            <a asp-action="Index" class="btn btn-light ms-2">Cancel</a>
+        </form>
+    </div>
+</div>
+@section Scripts { @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); } }

@@ -1,0 +1,20 @@
+@model MedCare_HelpDesk.Models.User
+
+@{
+    ViewData["Title"] = "Staff Account Details";
+}
+
+<div class="container main-container mt-4">
+    <div class="content-card col-md-7 mx-auto">
+        <h3 class="mb-3">@Model.FirstName @Model.LastName</h3>
+        <dl class="row">
+            <dt class="col-sm-4">Email</dt><dd class="col-sm-8">@Model.Email</dd>
+            <dt class="col-sm-4">Role</dt><dd class="col-sm-8">@Model.Role</dd>
+            <dt class="col-sm-4">Ward</dt><dd class="col-sm-8">@(Model.Department?.Name ?? "N/A")</dd>
+            <dt class="col-sm-4">Ward Extension</dt><dd class="col-sm-8">@Model.PhoneNumber</dd>
+            <dt class="col-sm-4">Status</dt><dd class="col-sm-8">@(Model.IsActive ? "Active" : "Deactivated")</dd>
+        </dl>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+        <a asp-action="Index" class="btn btn-light ms-2">Back</a>
+    </div>
+</div>

@@ -1,0 +1,76 @@
+@model IEnumerable<MedCare_HelpDesk.Models.KnowledgeArticle>
+
+@{
+    ViewData["Title"] = "Manage Help Guides";
+    int? currentUserId = ViewBag.CurrentUserId as int?;
+    bool isAdmin = ViewBag.IsAdmin is bool b && b;
+}
+
+<div class="container main-container">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold mb-0"><i class="bi bi-journals text-primary me-2"></i>Help Guides Management</h2>
+            <small class="text-muted">Agents can create guides and manage their own guides; Administrators can modify or remove any guide.</small>
+        </div>
+        <a asp-action="Create" class="btn btn-primary rounded-pill px-4"><i class="bi bi-journal-plus me-1"></i> Publish Guide</a>
+    </div>
+
+    <div class="mc-card mb-4">
+        <form asp-action="Index" method="get" class="row g-2">
+            <div class="col-md-6"><input type="text" name="searchString" value="@ViewData["CurrentSearch"]" class="form-control" placeholder="Search guides..." /></div>
+            <div class="col-md-4">
+                <select name="categoryFilter" class="form-select">
+                    <option value="">All Categories</option>
+                    <option value="Medical Equipment" selected="@(ViewData["CategoryFilter"]?.ToString() == "Medical Equipment")">Medical Equipment</option>
+                    <option value="Hospital Software" selected="@(ViewData["CategoryFilter"]?.ToString() == "Hospital Software")">Hospital Software</option>
+                    <option value="IT / Network" selected="@(ViewData["CategoryFilter"]?.ToString() == "IT / Network")">IT / Network</option>
+                    <option value="Staff Requests" selected="@(ViewData["CategoryFilter"]?.ToString() == "Staff Requests")">Staff Requests</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+                <a asp-action="Index" class="btn btn-light border">Clear</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="mc-card table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr><th>Title</th><th>Category</th><th>Author</th><th>Updated</th><th class="text-end">Actions</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    bool canManage = isAdmin || (currentUserId.HasValue && item.AuthorId == currentUserId.Value);
+                    <tr>
+                        <td class="fw-bold"><i class="bi @item.IconClass @item.ColorClass me-2"></i>@item.Title</td>
+                        <td><span class="badge bg-info-subtle text-info border">@item.Category</span></td>
+                        <td>
+                            @item.AuthorName
+                            @if (currentUserId.HasValue && item.AuthorId == currentUserId.Value)
+                            {
+                                <span class="badge bg-success-subtle text-success border ms-1">Yours</span>
+                            }
+                        </td>
+                        <td class="mc-mono small text-nowrap">@item.UpdatedAt.ToString("dd MMM yyyy")</td>
+                        <td class="text-end text-nowrap">
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info rounded-pill">Details</a>
+                            @if (canManage)
+                            {
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary rounded-pill">Edit</a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger rounded-pill">Delete</a>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary-subtle text-secondary border ms-1" title="Only Administrators or the original author can modify/delete this guide.">
+                                    <i class="bi bi-lock-fill me-1"></i>Protected
+                                </span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

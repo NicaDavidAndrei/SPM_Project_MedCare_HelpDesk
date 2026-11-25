@@ -1,0 +1,18 @@
+@model MedCare_HelpDesk.Models.Category
+@{ ViewData["Title"] = "Edit Category"; }
+<div class="container main-container mt-4">
+    <div class="content-card col-md-6 mx-auto">
+        <h3 class="mb-3">Edit Problem Category</h3>
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div class="mb-3"><label asp-for="Name" class="form-label fw-bold"></label><input asp-for="Name" class="form-control" required /></div>
+            <div class="mb-3"><label asp-for="SpecialtyTag" class="form-label fw-bold"></label><input asp-for="SpecialtyTag" class="form-control" /></div>
+            <div class="mb-3"><label asp-for="IconClass" class="form-label fw-bold"></label><input asp-for="IconClass" class="form-control" /></div>
+            <div class="mb-3"><label asp-for="Description" class="form-label fw-bold"></label><textarea asp-for="Description" class="form-control" rows="2"></textarea></div>
+            <div class="form-check form-switch mb-3"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label">Active</label></div>
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a asp-action="Index" class="btn btn-light ms-2">Cancel</a>
+        </form>
+    </div>
+</div>
+@section Scripts { @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); } }

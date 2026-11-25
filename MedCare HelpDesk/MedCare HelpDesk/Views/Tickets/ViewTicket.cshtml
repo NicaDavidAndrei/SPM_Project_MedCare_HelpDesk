@@ -1,0 +1,363 @@
+@model MedCare_HelpDesk.Models.Ticket
+@using MedCare_HelpDesk.Services
+@using MedCare_HelpDesk.Models.ML
+
+@{
+    ViewData["Title"] = $"Ticket {Model.TicketCode ?? $"#{Model.Id}"}";
+    bool isResolvedOrClosed = Model.Status == "Resolved" || Model.Status == "Closed";
+    bool isITStaff = User.IsInRole("Admin") || User.IsInRole("Agent");
+    var sla = TicketService.EvaluateSlaHealthStatic(Model);
+
+    var statusClass = Model.Status switch
+    {
+        "Open" => "bg-primary",
+        "In Progress" => "bg-warning text-dark",
+        "Pending Info" => "bg-info text-dark",
+        "Resolved" => "bg-success",
+        "Closed" => "bg-secondary",
+        _ => "bg-primary"
+    };
+
+    var priorityClass = Model.Priority switch
+    {
+        "Critical" => "bg-critical",
+        "High" => "bg-danger",
+        "Medium" => "bg-info text-dark",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="container main-container mt-4">
+    <div class="mb-3">
+        <a asp-action="@(isITStaff ? "AllTickets" : "MyTickets")" class="text-decoration-none text-secondary">
+            <i class="bi bi-arrow-left"></i> Back to tickets
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            <div class="content-card mb-4">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                        <span class="mc-ticket-code me-2">@(Model.TicketCode ?? $"#{Model.Id}")</span>
+                        @if (!string.IsNullOrEmpty(Model.EquipmentTag))
+                        {
+                            <span class="badge bg-secondary-subtle text-secondary border">Asset: @Model.EquipmentTag</span>
+                        }
+                        <h3 class="mt-2 mb-0 fw-bold">@Model.Title</h3>
+                    </div>
+                    <span class="badge @statusClass fs-6 px-3 py-2">@Model.Status</span>
+                </div>
+                <hr />
+                <p class="fw-bold text-secondary mb-1">Technical Description:</p>
+                <p class="bg-light-subtle p-3 rounded border" style="white-space: pre-wrap;">@Model.Description</p>
+
+                @if (!string.IsNullOrWhiteSpace(Model.ResolutionSummary))
+                {
+                    <div class="alert alert-success mt-3 mb-0">
+                        <strong><i class="bi bi-check-circle-fill me-1"></i>Technical Resolution Summary:</strong><br />
+                        @Model.ResolutionSummary
+                    </div>
+                }
+
+                @if (Model.Attachments != null && Model.Attachments.Any(a => a.CommentId == null))
+                {
+                    <div class="mt-4">
+                        <p class="fw-bold text-secondary mb-2"><i class="bi bi-paperclip"></i> Diagnostic Attachments:</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var att in Model.Attachments.Where(a => a.CommentId == null))
+                            {
+                                if (att.FilePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <a href="@att.FilePath" target="_blank" class="btn btn-outline-danger btn-sm">
+                                        <i class="bi bi-file-earmark-pdf-fill me-1"></i> @att.FileName
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a href="javascript:void(0)" onclick="openImageModal('@att.FilePath', '@att.FileName')">
+                                        <img src="@att.FilePath" alt="@att.FileName" class="img-thumbnail shadow-sm" style="max-height: 120px; object-fit: cover;" />
+                                    </a>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="content-card shadow-sm p-4 bg-white rounded @(isResolvedOrClosed ? "opacity-75" : "")">
+                <h5 class="mb-4"><i class="bi bi-chat-left-text me-2"></i>Clinical &amp; Technician Discussion Thread</h5>
+
+                <div id="chatThread">
+                    <div class="d-flex mb-4">
+                        <div class="flex-shrink-0">
+                            <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 44px; height: 44px;">
+                                <i class="bi bi-hospital"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="p-3 bg-light border rounded">
+                                <strong>MedCare SLA System</strong> <span class="text-muted small ms-2">@Model.CreatedAt.ToString("MMM dd, yyyy, HH:mm") UTC</span>
+                                <p class="mb-0 mt-1">Ticket registered under <strong>@(Model.Priority)</strong> SLA (24/7 hospital clock).</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    @foreach (var comment in Model.Comments?.OrderBy(c => c.CreatedAt) ?? Enumerable.Empty<Comment>())
+                    {
+                        string borderCls = comment.User?.Role == "Admin" ? "border-danger border-2" : (comment.User?.Role == "Agent" ? "border-success border-2" : "border-secondary-subtle");
+                        string avatarCls = comment.User?.Role == "Admin" ? "bg-danger" : (comment.User?.Role == "Agent" ? "bg-success" : "bg-primary");
+                        <div class="d-flex mb-4">
+                            <div class="flex-shrink-0">
+                                <div class="@avatarCls text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 44px; height: 44px;">
+                                    @(comment.User?.FirstName?[0] ?? 'U')@(comment.User?.LastName?[0] ?? 'S')
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="p-3 border rounded bg-white shadow-sm @borderCls">
+                                    <strong>@(comment.User?.FirstName ?? "Unknown") @(comment.User?.LastName ?? "")</strong>
+                                    @if (comment.User?.Role == "Admin") { <span class="badge bg-danger ms-1">Administrator</span> }
+                                    else if (comment.User?.Role == "Agent") { <span class="badge bg-success ms-1">Support Agent</span> }
+                                    else { <span class="badge bg-primary ms-1">Medical Staff</span> }
+
+                                    @if (!string.IsNullOrEmpty(comment.User?.PhoneNumber))
+                                    {
+                                        <span class="small text-muted ms-2"><i class="bi bi-telephone"></i> @comment.User.PhoneNumber</span>
+                                    }
+                                    <span class="text-muted small ms-2">@comment.CreatedAt.ToString("MMM dd, yyyy, HH:mm") UTC</span>
+                                    <p class="mb-0 mt-2">@comment.Text</p>
+
+                                    @if (comment.Attachments != null && comment.Attachments.Any())
+                                    {
+                                        <div class="mt-2 d-flex flex-wrap gap-2">
+                                            @foreach (var att in comment.Attachments)
+                                            {
+                                                if (att.FilePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                                                {
+                                                    <a href="@att.FilePath" target="_blank" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-earmark-pdf me-1"></i>@att.FileName</a>
+                                                }
+                                                else
+                                                {
+                                                    <a href="javascript:void(0)" onclick="openImageModal('@att.FilePath', '@att.FileName')">
+                                                        <img src="@att.FilePath" class="img-thumbnail" style="max-height: 80px; object-fit: cover;">
+                                                    </a>
+                                                }
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (isResolvedOrClosed)
+                {
+                    <div class="mt-4 pt-3 border-top text-center text-muted">
+                        <i class="bi bi-lock-fill me-1"></i>This ticket is @Model.Status?.ToLower() and discussion is locked for audit integrity.
+                    </div>
+                }
+                else
+                {
+                    <form id="commentForm" class="mt-4 pt-3 border-top">
+                        @Html.AntiForgeryToken()
+                        <textarea class="form-control bg-light mb-2" id="commentText" rows="3" placeholder="Add diagnostic details or technician update..."></textarea>
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <label for="replyFiles" class="btn btn-outline-secondary btn-sm mb-0"><i class="bi bi-paperclip me-1"></i> Attach Photo/PDF</label>
+                                <input type="file" id="replyFiles" multiple accept=".jpg,.jpeg,.png,.pdf" class="d-none" onchange="document.getElementById('fileChosenLabel').textContent = this.files.length ? (this.files.length + ' file(s)') : 'No file'" />
+                                <span id="fileChosenLabel" class="small text-muted ms-2">No file</span>
+                            </div>
+                            <button type="button" id="btnSendReply" onclick="sendReply(@Model.Id)" class="btn btn-primary px-4">
+                                <i class="bi bi-reply-fill me-1"></i> Send Reply
+                            </button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="content-card mb-4">
+                <h5 class="fw-bold mb-3">Ticket &amp; SLA Information</h5>
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2"><span class="text-muted small fw-bold d-block">Hospital Ward</span><strong>@(Model.Department?.Name ?? Model.Requester?.Department?.Name ?? "N/A")</strong></li>
+                    <li class="mb-2"><span class="text-muted small fw-bold d-block">Requester &amp; Direct Ward Ext.</span><strong>@(Model.Requester != null ? $"{Model.Requester.FirstName} {Model.Requester.LastName}" : "Unknown")</strong><br /><small class="text-primary"><i class="bi bi-telephone-fill me-1"></i>@(Model.Requester?.PhoneNumber ?? Model.Department?.WardPhoneExtension ?? "Ext. 911")</small></li>
+                    <li class="mb-2"><span class="text-muted small fw-bold d-block">Category</span><strong>@(Model.Category?.Name ?? "N/A")</strong> <small class="text-muted">(@(Model.Category?.SpecialtyTag))</small></li>
+                    <li class="mb-2"><span class="text-muted small fw-bold d-block">Priority</span><span class="badge @priorityClass">@Model.Priority</span></li>
+                    <li class="mb-2">
+                        <span class="text-muted small fw-bold d-block">SLA Deadline (24/7 Clock)</span>
+                        <div>@(Model.DueDate?.ToString("MMM dd, yyyy, HH:mm") ?? "N/A") UTC</div>
+                        @if (sla.IsResolved)
+                        {
+                            <span class="badge @(sla.IsBreached ? "bg-danger" : "bg-success") mt-1">@(sla.IsBreached ? "SLA Breached (Resolved Late)" : "SLA Met")</span>
+                        }
+                        else if (sla.IsBreached)
+                        {
+                            <span class="badge bg-danger mt-1">SLA Breached</span>
+                        }
+                        else if (sla.IsApproaching)
+                        {
+                            <span class="badge bg-warning text-dark mt-1">At Risk (&lt;=25% SLA Left)</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-info text-dark mt-1">SLA On Track</span>
+                        }
+                    </li>
+                    <li class="mb-0"><span class="text-muted small fw-bold d-block">Assigned Technician</span><strong>@(Model.AssignedAgent != null ? $"{Model.AssignedAgent.FirstName} {Model.AssignedAgent.LastName}" : "Unassigned")</strong></li>
+                </ul>
+            </div>
+
+            @if (ViewBag.SimilarTickets is List<SimilarTicketDto> similar && similar.Any())
+            {
+                <div class="content-card border-info border shadow-sm bg-white p-3 rounded mb-4">
+                    <h6 class="fw-bold text-primary mb-2"><i class="bi bi-clock-history me-1"></i>Similar Resolved Cases (TF-IDF)</h6>
+                    <div class="list-group list-group-flush">
+                        @foreach (var s in similar)
+                        {
+                            <a asp-action="ViewTicket" asp-route-id="@s.TicketId" class="list-group-item list-group-item-action px-1 py-2 d-flex justify-content-between align-items-center">
+                                <span class="small fw-bold text-truncate me-2">@s.TicketCode - @s.Title</span>
+                                <span class="badge bg-success-subtle text-success border rounded-pill">@s.Similarity%</span>
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (isITStaff)
+            {
+                <div class="content-card border-success border border-2 shadow-sm bg-white p-4 rounded">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0 fw-bold text-success"><i class="bi bi-gear-fill me-1"></i>Technician Controls</h6>
+                        @if (Model.Status == "Open")
+                        {
+                            <form asp-action="ClaimTicket" method="post" class="m-0">
+                                <input type="hidden" name="ticketId" value="@Model.Id" />
+                                <button type="submit" class="btn btn-outline-success btn-sm">Assign to Me</button>
+                            </form>
+                        }
+                    </div>
+
+                    <form asp-action="UpdateTicketStatus" method="post">
+                        <input type="hidden" name="TicketId" value="@Model.Id" />
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold">Status</label>
+                            <select name="Status" class="form-select form-select-sm" asp-for="Status">
+                                <option value="Open">Open</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Pending Info">Pending Info</option>
+                                <option value="Resolved">Resolved</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold">Priority</label>
+                            <select name="Priority" class="form-select form-select-sm" asp-for="Priority">
+                                <option value="Critical">Critical (2h)</option>
+                                <option value="High">High (4h)</option>
+                                <option value="Medium">Medium (12h)</option>
+                                <option value="Low">Low (24h)</option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <label class="form-label small fw-bold">Assigned Agent</label>
+                                <button type="button" class="btn btn-link btn-sm p-0 small" onclick="autoSelectLeastLoadedAgent()">Least Loaded</button>
+                            </div>
+                            <select id="assignedAgentSelect" name="AssignedAgentId" class="form-select form-select-sm" asp-for="AssignedAgentId">
+                                <option value="">-- Unassigned --</option>
+                                @if (ViewBag.SupportAgents != null)
+                                {
+                                    <optgroup label="Support Agents">
+                                        @foreach (var a in ViewBag.SupportAgents) { <option value="@a.Id">@a.Name</option> }
+                                    </optgroup>
+                                }
+                                @if (ViewBag.Administrators != null)
+                                {
+                                    <optgroup label="Administrators">
+                                        @foreach (var ad in ViewBag.Administrators) { <option value="@ad.Id">@ad.Name</option> }
+                                    </optgroup>
+                                }
+                            </select>
+                            <div id="smartRoutingNotice" class="small text-muted mt-1 d-none"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Resolution Note (Required to Resolve)</label>
+                            <textarea name="ResolutionSummary" class="form-control form-control-sm" rows="2" placeholder="Root cause & action taken...">@Model.ResolutionSummary</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-sm w-100 fw-bold">Update Ticket &amp; SLA</button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Full-Size Image Preview Modal (FR-19) -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewFileName"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="previewImgSrc" src="" class="img-fluid rounded" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openImageModal(src, name) {
+            $('#previewFileName').text(name);
+            $('#previewImgSrc').attr('src', src);
+            new bootstrap.Modal(document.getElementById('imagePreviewModal')).show();
+        }
+
+        function sendReply(ticketId) {
+            var text = $('#commentText').val();
+            var files = $('#replyFiles')[0].files;
+            if (!text.trim() && files.length === 0) return;
+
+            var token = $('#commentForm input[name="__RequestVerificationToken"]').val();
+            var formData = new FormData();
+            formData.append('__RequestVerificationToken', token);
+            formData.append('ticketId', ticketId);
+            formData.append('text', text);
+            for (var i = 0; i < files.length; i++) formData.append('files', files[i]);
+
+            $('#btnSendReply').prop('disabled', true);
+            $.ajax({
+                url: '/Tickets/AddComment',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    $('#btnSendReply').prop('disabled', false);
+                    if (res.success) {
+                        location.reload();
+                    } else {
+                        alert(res.message);
+                    }
+                },
+                error: function (xhr) {
+                    $('#btnSendReply').prop('disabled', false);
+                    alert((xhr.responseJSON && xhr.responseJSON.message) || 'Error sending comment.');
+                }
+            });
+        }
+
+        function autoSelectLeastLoadedAgent() {
+            $.get('/Tickets/GetLeastLoadedAgent', { categoryId: '@Model.CategoryId' }, function (res) {
+                if (res && res.success) {
+                    $('#assignedAgentSelect').val(res.agentId);
+                    $('#smartRoutingNotice').removeClass('d-none').html(`Selected: <strong>${res.agentName}</strong> (${res.workload} pts)`);
+                }
+            });
+        }
+    </script>
+}
