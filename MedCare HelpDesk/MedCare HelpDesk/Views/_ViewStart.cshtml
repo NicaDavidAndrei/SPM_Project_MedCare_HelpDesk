@@ -1,0 +1,25 @@
+@using Microsoft.AspNetCore.Identity
+@using MedCare_HelpDesk.Models
+@inject SignInManager<User> SignInManager
+
+@{
+    if (SignInManager.IsSignedIn(User))
+    {
+        if (User.IsInRole("Admin"))
+        {
+            Layout = "_AdministratorLayout";
+        }
+        else if (User.IsInRole("Agent"))
+        {
+            Layout = "_AgentLayout";
+        }
+        else
+        {
+            Layout = "_UserLayout";
+        }
+    }
+    else
+    {
+        Layout = "_GuestLayout";
+    }
+}

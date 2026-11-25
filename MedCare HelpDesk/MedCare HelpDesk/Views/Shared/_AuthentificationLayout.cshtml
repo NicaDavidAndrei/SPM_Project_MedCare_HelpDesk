@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - MedCare HelpDesk</title>
+    <link rel="icon" type="image/svg+xml" href="~/images/headset_guest.svg" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.2/font/bootstrap-icons.css">
+    <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
+    <style>
+        .login-container { flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <div class="hotline-banner py-1 px-3 text-center">
+        <i class="bi bi-telephone-inbound-fill text-danger me-1"></i>
+        <strong>REGINA MARIA Craiova – Wi-Fi Outage Emergency Hotline:</strong> +40 251-XXX-911 (Ext. 911)
+    </div>
+
+    <main class="flex-grow-1 d-flex flex-column">
+        @RenderBody()
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,185 @@
+@using MedCare_HelpDesk.Services
+@model IEnumerable<MedCare_HelpDesk.Models.Ticket>
+
+@{
+    ViewData["Title"] = "Biomedical & IT Workspace";
+    int? currentUserId = ViewBag.CurrentUserId as int?;
+
+    var openCount = Model.Count(t => t.Status == "Open");
+    var inProgressCount = Model.Count(t => t.Status == "In Progress" || t.Status == "Pending Info");
+    var resolvedCount = Model.Count(t => t.Status == "Resolved" || t.Status == "Closed");
+    var slaBreachedCount = Model.Count(t => { var s = TicketService.EvaluateSlaHealthStatic(t); return !s.IsResolved && s.IsBreached; });
+    var lateResolvedCount = Model.Count(t => { var s = TicketService.EvaluateSlaHealthStatic(t); return s.IsResolved && s.IsBreached; });
+
+    var priorityQueue = Model
+        .Where(t => t.Status != "Resolved" && t.Status != "Closed")
+        .OrderByDescending(t => { var s = TicketService.EvaluateSlaHealthStatic(t); return s.IsBreached ? 2 : (s.IsApproaching ? 1 : 0); })
+        .ThenBy(t => t.DueDate ?? DateTime.MaxValue)
+        .Take(6)
+        .ToList();
+
+    var myAssigned = currentUserId.HasValue
+        ? Model.Where(t => t.AssignedAgentId == currentUserId.Value && t.Status != "Resolved" && t.Status != "Closed").OrderBy(t => t.DueDate ?? DateTime.MaxValue).ToList()
+        : new List<MedCare_HelpDesk.Models.Ticket>();
+}
+
+<div class="container main-container">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold mb-0"><i class="bi bi-wrench-adjustable text-primary me-2"></i>Biomedical &amp; IT SLA Command</h2>
+            <small class="text-muted">Live 24/7 clinical ticket queue sorted by overdue &amp; shortest SLA deadline.</small>
+        </div>
+        @if (ViewBag.MyWorkloadScore != null)
+        {
+            int myScore = (int)ViewBag.MyWorkloadScore;
+            string loadClass = myScore <= 3 ? "bg-success-subtle text-success border-success-subtle" : (myScore <= 6 ? "bg-warning-subtle text-warning border-warning-subtle" : "bg-danger-subtle text-danger border-danger-subtle");
+            <span class="badge @loadClass border px-3 py-2 fs-6 rounded-pill">
+                <i class="bi bi-speedometer2 me-1"></i>Weighted Load: <strong class="mc-mono">@myScore pts</strong>
+            </span>
+        }
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card card h-100 p-3 mc-kpi-rail mc-kpi-rail-primary" onclick="window.location.href='@Url.Action("AllTickets", "Tickets", new { statusFilter = "Open" })'">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="card-title text-primary">Open Queue</div>
+                        <div class="display-5 fw-bold">@openCount</div>
+                    </div>
+                    <span class="mc-kpi-icon bg-primary-subtle text-primary"><i class="bi bi-inbox-fill"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card card h-100 p-3 mc-kpi-rail mc-kpi-rail-warning" onclick="window.location.href='@Url.Action("AllTickets", "Tickets", new { statusFilter = "In Progress" })'">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="card-title text-warning">In Progress</div>
+                        <div class="display-5 fw-bold">@inProgressCount</div>
+                    </div>
+                    <span class="mc-kpi-icon bg-warning-subtle text-warning"><i class="bi bi-tools"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card card h-100 p-3 mc-kpi-rail mc-kpi-rail-success" onclick="window.location.href='@Url.Action("AllTickets", "Tickets", new { statusFilter = "Resolved" })'">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="card-title text-success">Resolved</div>
+                        <div class="display-5 fw-bold">@resolvedCount</div>
+                    </div>
+                    <span class="mc-kpi-icon bg-success-subtle text-success"><i class="bi bi-check2-circle"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card card h-100 p-3 mc-kpi-rail mc-kpi-rail-danger" onclick="window.location.href='@Url.Action("AllTickets", "Tickets", new { slaFilter = "Breached" })'">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="card-title text-danger">SLA Breached</div>
+                        <div class="display-5 fw-bold text-danger">@slaBreachedCount</div>
+                        @if (lateResolvedCount > 0)
+                        {
+                            <small class="text-muted">(+ @lateResolvedCount late)</small>
+                        }
+                    </div>
+                    <span class="mc-kpi-icon bg-danger-subtle text-danger"><i class="bi bi-exclamation-octagon-fill"></i></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="mc-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-alarm text-danger me-2"></i>Urgent &amp; Breached Priority Queue</h5>
+                    <a asp-controller="Tickets" asp-action="AllTickets" class="btn btn-outline-primary btn-sm rounded-pill px-3">Full Queue &rarr;</a>
+                </div>
+                <div class="list-group list-group-flush">
+                    @foreach (var ticket in priorityQueue)
+                    {
+                        var sla = TicketService.EvaluateSlaHealthStatic(ticket);
+                        bool isCriticalWard = ticket.Department?.IsCriticalCare == true;
+                        int pct = (int)Math.Round(sla.RemainingRatio * 100);
+                        string barColor = sla.IsBreached ? "bg-danger" : (sla.IsApproaching ? "bg-warning" : "bg-success");
+                        <div class="list-group-item px-0 py-3 @(isCriticalWard ? "border-start border-danger border-3 ps-2" : "")">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
+                                <div>
+                                    <a asp-controller="Tickets" asp-action="ViewTicket" asp-route-id="@ticket.Id" class="fw-bold text-body text-decoration-none">
+                                        <span class="mc-ticket-code me-2">@(ticket.TicketCode ?? $"#{ticket.Id}")</span>@ticket.Title
+                                    </a>
+                                    <div class="small text-muted mt-1">
+                                        <strong>@(ticket.Department?.Name ?? "Ward")</strong>
+                                        @if (!string.IsNullOrEmpty(ticket.Requester?.PhoneNumber))
+                                        {
+                                            <span>&bull; <i class="bi bi-telephone"></i> @ticket.Requester.PhoneNumber</span>
+                                        }
+                                        &bull; Due: <span class="mc-mono">@(ticket.DueDate?.ToString("dd MMM HH:mm") ?? "N/A") UTC</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    @if (sla.IsBreached)
+                                    {
+                                        <span class="badge bg-danger">BREACHED</span>
+                                    }
+                                    else if (sla.IsApproaching)
+                                    {
+                                        <span class="badge bg-warning text-dark">&lt;=25% Left</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success-subtle text-success border">On Track</span>
+                                    }
+                                    @if (ticket.AssignedAgentId == null)
+                                    {
+                                        <form asp-controller="Tickets" asp-action="ClaimTicket" method="post" class="m-0">
+                                            <input type="hidden" name="ticketId" value="@ticket.Id" />
+                                            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3">Claim</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Tickets" asp-action="ViewTicket" asp-route-id="@ticket.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3">Inspect</a>
+                                    }
+                                </div>
+                            </div>
+                            <div class="mc-sla-bar mt-2">
+                                <div class="progress-bar @barColor" style="width:@(sla.IsBreached ? 100 : Math.Max(8, pct))%;height:100%;"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="mc-card h-100">
+                <h5 class="fw-bold mb-3"><i class="bi bi-person-workspace text-primary me-2"></i>My Assigned Tasks</h5>
+                @if (myAssigned.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var mt in myAssigned)
+                        {
+                            var ms = TicketService.EvaluateSlaHealthStatic(mt);
+                            <a asp-controller="Tickets" asp-action="ViewTicket" asp-route-id="@mt.Id" class="list-group-item list-group-item-action px-0 py-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="mc-ticket-code">@(mt.TicketCode ?? $"#{mt.Id}")</span>
+                                    <span class="badge @(ms.IsBreached ? "bg-danger" : (ms.IsApproaching ? "bg-warning text-dark" : "bg-info text-dark"))">@mt.Priority</span>
+                                </div>
+                                <div class="fw-semibold small">@mt.Title</div>
+                                <small class="text-muted">@(mt.Department?.Name) &bull; @mt.Status</small>
+                            </a>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted small mb-0">No active tickets assigned to you right now.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<partial name="_BackToTop" />

@@ -1,0 +1,117 @@
+@model IEnumerable<MedCare_HelpDesk.Models.Ticket>
+@using MedCare_HelpDesk.Models
+@using MedCare_HelpDesk.Services
+
+@{
+    ViewData["Title"] = "Global Hospital SLA Queue";
+    var wards = ViewBag.Departments as IEnumerable<Department> ?? Enumerable.Empty<Department>();
+}
+
+<div class="container main-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-list-task me-2"></i>Hospital Support SLA Queue</h2>
+        <a asp-action="SubmitTicket" class="btn btn-primary"><i class="bi bi-plus-circle-fill me-1"></i> New Ticket</a>
+    </div>
+
+    <div class="content-card">
+        <form asp-action="AllTickets" method="get" class="mb-4">
+            <div class="row g-2">
+                <div class="col-md-2">
+                    <select name="statusFilter" class="form-select" onchange="this.form.submit()">
+                        <option value="All">All Statuses</option>
+                        <option value="Open" selected="@(ViewData["StatusFilter"]?.ToString() == "Open")">Open</option>
+                        <option value="In Progress" selected="@(ViewData["StatusFilter"]?.ToString() == "In Progress")">In Progress</option>
+                        <option value="Pending Info" selected="@(ViewData["StatusFilter"]?.ToString() == "Pending Info")">Pending Info</option>
+                        <option value="Resolved" selected="@(ViewData["StatusFilter"]?.ToString() == "Resolved")">Resolved</option>
+                        <option value="Closed" selected="@(ViewData["StatusFilter"]?.ToString() == "Closed")">Closed</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="priorityFilter" class="form-select" onchange="this.form.submit()">
+                        <option value="All">All Priorities</option>
+                        <option value="Critical" selected="@(ViewData["PriorityFilter"]?.ToString() == "Critical")">Critical (2h)</option>
+                        <option value="High" selected="@(ViewData["PriorityFilter"]?.ToString() == "High")">High (4h)</option>
+                        <option value="Medium" selected="@(ViewData["PriorityFilter"]?.ToString() == "Medium")">Medium (12h)</option>
+                        <option value="Low" selected="@(ViewData["PriorityFilter"]?.ToString() == "Low")">Low (24h)</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="slaFilter" class="form-select" onchange="this.form.submit()">
+                        <option value="All">All SLA States</option>
+                        <option value="Breached" selected="@(ViewData["SlaFilter"]?.ToString() == "Breached")">Breached</option>
+                        <option value="Approaching" selected="@(ViewData["SlaFilter"]?.ToString() == "Approaching")">At Risk (&lt;=25%)</option>
+                        <option value="OnTrack" selected="@(ViewData["SlaFilter"]?.ToString() == "OnTrack")">On Track</option>
+                        <option value="Met" selected="@(ViewData["SlaFilter"]?.ToString() == "Met")">SLA Met</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="departmentFilter" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Wards</option>
+                        @foreach (var w in wards)
+                        {
+                            <option value="@w.Id" selected="@(ViewData["DepartmentFilter"]?.ToString() == w.Id.ToString())">@w.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Search code, tag, title...">
+                        <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+                        <a asp-action="AllTickets" class="btn btn-outline-danger"><i class="bi bi-x-circle"></i></a>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Code</th><th>Title &amp; Ward</th><th>Requester / Ext</th><th>Agent</th><th>SLA Deadline</th><th>Priority</th><th>Status</th><th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var sla = TicketService.EvaluateSlaHealthStatic(item);
+                        <tr>
+                            <td><span class="mc-ticket-code">@(item.TicketCode ?? $"#{item.Id}")</span></td>
+                            <td>
+                                <div class="fw-semibold">@item.Title</div>
+                                <small class="text-muted">@(item.Department?.Name ?? "Ward") @(!string.IsNullOrEmpty(item.EquipmentTag) ? $"• {item.EquipmentTag}" : "")</small>
+                            </td>
+                            <td>
+                                <div>@(item.Requester != null ? $"{item.Requester.FirstName} {item.Requester.LastName}" : "Staff")</div>
+                                <small class="text-muted">@(item.Requester?.PhoneNumber ?? item.Department?.WardPhoneExtension)</small>
+                            </td>
+                            <td>@(item.AssignedAgent != null ? $"{item.AssignedAgent.FirstName} {item.AssignedAgent.LastName}" : "Unassigned")</td>
+                            <td>
+                                <small>@(item.DueDate?.ToString("dd MMM, HH:mm") ?? "N/A")</small><br />
+                                @if (sla.IsResolved)
+                                {
+                                    <span class="badge @(sla.IsBreached ? "bg-danger-subtle text-danger" : "bg-success-subtle text-success")">@(sla.IsBreached ? "Breached (Late)" : "SLA Met")</span>
+                                }
+                                else if (sla.IsBreached)
+                                {
+                                    <span class="badge bg-danger">SLA Breached</span>
+                                }
+                                else if (sla.IsApproaching)
+                                {
+                                    <span class="badge bg-warning text-dark">Warning &lt;=25%</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-info text-dark">On Track</span>
+                                }
+                            </td>
+                            <td><span class="badge @(item.Priority == "Critical" ? "bg-critical" : (item.Priority == "High" ? "bg-danger" : "bg-secondary"))">@item.Priority</span></td>
+                            <td><span class="badge bg-primary">@item.Status</span></td>
+                            <td><a asp-action="ViewTicket" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">View</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<partial name="_BackToTop" />

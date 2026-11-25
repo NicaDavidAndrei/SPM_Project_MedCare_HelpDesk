@@ -1,0 +1,17 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<div class="container main-container mt-5">
+    <div class="content-card text-center p-5">
+        <i class="bi bi-exclamation-octagon-fill text-danger display-3 mb-3"></i>
+        <h2 class="text-danger fw-bold">An unexpected error occurred</h2>
+        <p class="text-muted">If urgent ATI or Emergency (UPU) equipment support is needed, call <strong>+40 251-XXX-911</strong> immediately.</p>
+        @if (Model.ShowRequestId)
+        {
+            <p class="small text-muted"><strong>Request ID:</strong> <code>@Model.RequestId</code></p>
+        }
+        <a asp-controller="Home" asp-action="GuestDashboard" class="btn btn-primary mt-2">Return to Dashboard</a>
+    </div>
+</div>

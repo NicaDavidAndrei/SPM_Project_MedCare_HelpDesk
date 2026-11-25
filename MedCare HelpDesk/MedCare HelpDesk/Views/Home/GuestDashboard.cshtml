@@ -1,0 +1,82 @@
+@{
+    ViewData["Title"] = "MedCare Public Portal";
+}
+
+<div class="container main-container">
+    <div class="mc-clinical-hero mb-4">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <span class="badge bg-light bg-opacity-25 text-white rounded-pill px-3 py-2 mb-3">
+                    <i class="bi bi-shield-check me-1"></i>REGINA MARIA Craiova • Hospital Technical HelpDesk
+                </span>
+                <h1 class="display-5 fw-bold mb-3">Clinical Equipment &amp; IT Support Portal</h1>
+                <p class="lead opacity-75 mb-4">
+                    Browse step-by-step bedside equipment and clinical software self-service guides without signing in, inspect 24/7 SLA response commitments, or authenticate as hospital staff to submit a fault.
+                </p>
+                <form asp-controller="KnowledgeBase" asp-action="Index" method="get" class="d-flex flex-wrap gap-2">
+                    <div class="input-group input-group-lg shadow" style="max-width: 520px;">
+                        <input type="text" name="searchString" class="form-control border-0" placeholder="Search troubleshooting guides (SpO2, PACS, printer, Wi-Fi)...">
+                        <button class="btn btn-dark px-4" type="submit"><i class="bi bi-search me-1"></i>Find Guide</button>
+                    </div>
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light btn-lg rounded-pill px-4">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>Staff Sign In
+                    </a>
+                </form>
+            </div>
+            <div class="col-lg-4">
+                <div class="p-4 rounded-4" style="background:rgba(255,255,255,0.12);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.2);">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold"><i class="bi bi-telephone-inbound-fill text-warning me-2"></i>Emergency Hotline</span>
+                        <span class="badge bg-danger">24/7 Live</span>
+                    </div>
+                    <div class="fs-3 fw-bold mc-mono mb-2">+40 251-XXX-911</div>
+                    <p class="small opacity-75 mb-2">Use immediately during ATI or UPU life-support failures or local Wi-Fi dropouts.</p>
+                    <div class="small border-top border-light border-opacity-25 pt-2">
+                        <i class="bi bi-journal-medical me-1"></i> <strong>@(ViewBag.KnowledgeCount ?? 10)</strong> verified guides available in read-only mode
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="mc-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-clock-history text-primary me-2"></i>24/7 Hospital Resolution SLA Matrix</h5>
+                    <span class="badge bg-primary-subtle text-primary border">Continuous 365 Clock</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0 align-middle">
+                        <thead><tr><th>Priority Tier</th><th>Target Deadline</th><th>Clinical Scope</th></tr></thead>
+                        <tbody>
+                            <tr><td><span class="badge bg-critical">Critical</span></td><td class="fw-bold mc-mono">2 Hours</td><td>ATI ventilators, UPU defibrillators, triage HIS outage</td></tr>
+                            <tr><td><span class="badge bg-danger">High</span></td><td class="fw-bold mc-mono">4 Hours</td><td>Radiology PACS, Lab LIS, Surgery OR backup unit active</td></tr>
+                            <tr><td><span class="badge bg-info text-dark">Medium</span></td><td class="fw-bold mc-mono">12 Hours</td><td>Ward printers, nursing station PCs, wing Wi-Fi</td></tr>
+                            <tr><td><span class="badge bg-secondary">Low</span></td><td class="fw-bold mc-mono">24 Hours</td><td>Ward transfer extension updates, new KB article request</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="mc-card h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <h5 class="fw-bold mb-2"><i class="bi bi-shield-lock text-primary me-2"></i>Guest Session Boundaries</h5>
+                    <p class="text-muted small mb-3">
+                        Unauthenticated visitors operate in strict read-only mode. Only authenticated clinicians (<strong>User</strong>), Biomedical/IT Agents (<strong>Agent</strong>), and Hospital Administrators (<strong>Admin</strong>) can log incidents or manage ward assets.
+                    </p>
+                </div>
+                <div class="d-grid gap-2">
+                    <a asp-controller="KnowledgeBase" asp-action="Index" class="btn btn-outline-primary rounded-pill">
+                        <i class="bi bi-journals me-2"></i>Explore All @(ViewBag.KnowledgeCount ?? 10) Self-Service Guides
+                    </a>
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-primary rounded-pill">
+                        <i class="bi bi-person-badge me-2"></i>Sign In to Report an Issue
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

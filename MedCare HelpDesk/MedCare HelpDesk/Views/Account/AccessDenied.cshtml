@@ -1,0 +1,25 @@
+@{
+    ViewData["Title"] = "Access Denied (403)";
+}
+
+<div class="container main-container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="content-card text-center p-5 border border-danger border-2">
+                <i class="bi bi-shield-lock-fill text-danger display-2 mb-3"></i>
+                <h2 class="fw-bold text-danger mb-2">403 – Access Denied</h2>
+                <p class="text-muted mb-4">
+                    Your current MedCare HelpDesk role or hospital ward permissions do not authorize access to this resource.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a asp-controller="Home" asp-action="GuestDashboard" class="btn btn-primary">
+                        <i class="bi bi-house-door me-1"></i> Return to My Dashboard
+                    </a>
+                    <a asp-controller="KnowledgeBase" asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-search me-1"></i> Browse Knowledge Base
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

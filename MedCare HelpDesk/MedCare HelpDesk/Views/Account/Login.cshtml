@@ -1,0 +1,238 @@
+@model MedCare_HelpDesk.Models.LoginViewModel
+
+@{
+    ViewData["Title"] = "Hospital Sign In";
+    Layout = "_AuthentificationLayout";
+}
+
+<div class="mc-login-split row g-0 flex-grow-1">
+    <!-- Left Clinical Showcase Panel -->
+    <div class="col-lg-5 mc-login-showcase p-4 p-lg-5 d-flex flex-column justify-content-between">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-4">
+                <span class="mc-brand-mark"><i class="bi bi-hospital-fill"></i></span>
+                <div>
+                    <div class="fw-bold fs-5 lh-1">MedCare HelpDesk</div>
+                    <small class="text-white-50">REGINA MARIA Craiova • SPM-HC-2026-01</small>
+                </div>
+            </div>
+
+            <h1 class="display-6 fw-bold mb-3">24/7 Clinical &amp; Biomedical Support Command</h1>
+            <p class="text-white-50 mb-4">
+                Replace ward phone calls and handwritten notes with structured ticket tracking, diagnostic image uploads, and automated ML.NET / TF-IDF triage.
+            </p>
+
+            <div class="row g-2 mb-4">
+                <div class="col-6">
+                    <div class="p-3 rounded-3" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);">
+                        <div class="small fw-bold" style="color:#fca5a5;">CRITICAL SLA</div>
+                        <div class="fs-5 fw-bold mc-mono">2 Hours</div>
+                        <small class="text-white-50">ATI / Emergency UPU</small>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-3 rounded-3" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);">
+                        <div class="small text-warning fw-bold">HIGH / MED / LOW</div>
+                        <div class="fs-5 fw-bold mc-mono">4 / 12 / 24h</div>
+                        <small class="text-white-50">24/7 Continuous Clock</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-column gap-2 pt-3 border-top border-light border-opacity-25">
+            <a asp-controller="KnowledgeBase" asp-action="Index" class="btn btn-outline-light rounded-pill text-start d-flex justify-content-between align-items-center px-3">
+                <span><i class="bi bi-journal-medical me-2"></i>Browse Knowledge Base as Guest</span>
+                <i class="bi bi-arrow-right"></i>
+            </a>
+            <small class="text-white-50"><i class="bi bi-shield-check me-1"></i>Zero Patient PII Policy • Never enter patient names or CNP.</small>
+        </div>
+    </div>
+
+    <!-- Right Sign-In Form -->
+    <div class="col-lg-7 d-flex align-items-center justify-content-center p-4 p-lg-5">
+        <div class="mc-card w-100" style="max-width: 470px;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h3 class="fw-bold mb-1">Staff Authentication</h3>
+                    <p class="text-muted small mb-0">Sign in with your @@medcare.ro clinical credentials.</p>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary rounded-pill" id="darkModeToggle" type="button" title="Toggle Dark Mode">
+                    <i class="bi bi-moon-fill" id="themeIcon"></i>
+                </button>
+            </div>
+
+            <form asp-controller="Account" asp-action="Login" method="post" class="text-start mt-3">
+                <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label text-muted small text-uppercase fw-bold">Institutional Email</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-envelope text-muted"></i></span>
+                        <input asp-for="Email" id="Email" class="form-control" placeholder="name@medcare.ro" />
+                    </div>
+                    <span asp-validation-for="Email" class="text-danger small mt-1 d-block"></span>
+                </div>
+
+                <div class="mb-2">
+                    <label asp-for="Password" class="form-label text-muted small text-uppercase fw-bold">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock text-muted"></i></span>
+                        <input asp-for="Password" class="form-control" placeholder="••••••••" id="password" />
+                        <span class="input-group-text password-toggle-icon" onclick="togglePassword('password', 'eyeIconLogin')">
+                            <i class="bi bi-eye text-muted" id="eyeIconLogin"></i>
+                        </span>
+                    </div>
+                    <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="form-check mb-0">
+                        <input asp-for="RememberMe" class="form-check-input" />
+                        <label asp-for="RememberMe" class="form-check-label small text-muted">Keep me signed in</label>
+                    </div>
+                    <a href="#" class="small text-decoration-none" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">Forgot Password?</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 mb-3 rounded-pill shadow-sm">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In to Portal
+                </button>
+            </form>
+
+            <div class="border-top pt-3 mt-2">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small text-muted">New hospital clinician?</span>
+                    <a href="#" class="small fw-bold text-decoration-none" data-bs-toggle="modal" data-bs-target="#registerModal">Create Staff Account</a>
+                </div>
+
+                <div class="p-2 rounded-3 bg-light-subtle border small">
+                    <div class="fw-bold text-muted mb-1" style="font-size:0.75rem;">QUICK TEST CREDENTIALS (CLICK TO FILL):</div>
+                    <div class="d-flex flex-wrap gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" onclick="fillDemoCredentials('admin@medcare.ro','Admin123!')">Admin</button>
+                        <button type="button" class="btn btn-sm btn-outline-success rounded-pill" onclick="fillDemoCredentials('agent@medcare.ro','Agent123!')">Biomed Agent</button>
+                        <button type="button" class="btn btn-sm btn-outline-info rounded-pill" onclick="fillDemoCredentials('it.agent@medcare.ro','Agent123!')">IT Agent</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" onclick="fillDemoCredentials('user@medcare.ro','User123!')">ATI Clinician</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Staff Registration Modal -->
+<div class="modal fade" id="registerModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-person-plus me-2 text-primary"></i>Register Medical Staff Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="registerForm">
+                    @Html.AntiForgeryToken()
+                    <div id="registerError" class="alert alert-danger d-none small"></div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold">First Name</label>
+                            <input type="text" name="FirstName" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small fw-bold">Last Name</label>
+                            <input type="text" name="LastName" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">Hospital Ward</label>
+                        <select name="DepartmentId" class="form-select" asp-items="ViewBag.Departments" required>
+                            <option selected disabled value="">Choose Hospital Ward...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">Institutional Email</label>
+                        <input type="email" name="Email" class="form-control" placeholder="name@medcare.ro" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">Password (min 8 chars, upper, lower, digit)</label>
+                        <div class="input-group">
+                            <input type="password" name="Password" class="form-control" id="regPassword" required>
+                            <span class="input-group-text password-toggle-icon" onclick="togglePassword('regPassword', 'eyeIconReg1')">
+                                <i class="bi bi-eye text-muted" id="eyeIconReg1"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-bold">Confirm Password</label>
+                        <div class="input-group">
+                            <input type="password" name="ConfirmPassword" class="form-control" id="regConfirmPassword" required>
+                            <span class="input-group-text password-toggle-icon" onclick="togglePassword('regConfirmPassword', 'eyeIconReg2')">
+                                <i class="bi bi-eye text-muted" id="eyeIconReg2"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill" id="btnRegister">Create Account &amp; Enter Portal</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Password Recovery Modal -->
+<div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-key me-2 text-primary"></i>Password Recovery</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <p class="text-muted small">For hospital security compliance, contact the IT Administrator (<code>admin@medcare.ro</code> or Ext. 911) to issue a token-verified password reset.</p>
+                <a href="mailto:admin@medcare.ro" class="btn btn-primary w-100 rounded-pill"><i class="bi bi-envelope me-2"></i>Contact Hospital IT Admin</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script>
+        $(document).ready(function () {
+            $('#registerForm').on('submit', function (e) {
+                e.preventDefault();
+                var password = $('#regPassword').val();
+                var confirmPassword = $('#regConfirmPassword').val();
+                var $errorDiv = $('#registerError');
+                $errorDiv.addClass('d-none').removeClass('alert-success').addClass('alert-danger');
+
+                if (password !== confirmPassword) {
+                    $errorDiv.removeClass('d-none').text('Passwords do not match.');
+                    return false;
+                }
+
+                var $btn = $('#btnRegister');
+                $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Creating Account...');
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/Account/RegisterAjax',
+                    data: $(this).serialize(),
+                    success: function (response) {
+                        if (response.success) {
+                            $errorDiv.removeClass('alert-danger d-none').addClass('alert-success text-center p-3')
+                                .html('<i class="bi bi-check-circle-fill me-1"></i><strong>Account created!</strong> Redirecting to your ward portal...');
+                            setTimeout(function () {
+                                window.location.href = response.redirectUrl || '/Home/UserDashboard';
+                            }, 900);
+                        } else {
+                            $errorDiv.removeClass('d-none').text(response.message);
+                            $btn.prop('disabled', false).text('Create Account & Enter Portal');
+                        }
+                    },
+                    error: function () {
+                        $errorDiv.removeClass('d-none').text('Server error. Could not process your request.');
+                        $btn.prop('disabled', false).text('Create Account & Enter Portal');
+                    }
+                });
+            });
+        });
+    </script>
+}

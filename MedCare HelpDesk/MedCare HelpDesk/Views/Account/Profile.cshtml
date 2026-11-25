@@ -1,0 +1,168 @@
+@model MedCare_HelpDesk.Models.User
+
+@{
+    ViewData["Title"] = "My Profile";
+
+    string roleDisplayName = Model.Role switch
+    {
+        "Admin" => "Administrator",
+        "Agent" => "Support Agent",
+        _ => "Medical Staff"
+    };
+
+    string roleBadgeClass = Model.Role switch
+    {
+        "Admin" => "bg-danger",
+        "Agent" => "bg-success",
+        _ => "bg-primary"
+    };
+
+    bool isITStaff = Model.Role == "Admin" || Model.Role == "Agent";
+    int activeTicketsCount = isITStaff
+        ? (Model.AssignedTickets?.Count(t => t.Status != "Resolved" && t.Status != "Closed") ?? 0)
+        : (Model.SubmittedTickets?.Count(t => t.Status != "Resolved" && t.Status != "Closed") ?? 0);
+    int completedTicketsCount = isITStaff
+        ? (Model.AssignedTickets?.Count(t => t.Status == "Resolved" || t.Status == "Closed") ?? 0)
+        : (Model.SubmittedTickets?.Count(t => t.Status == "Resolved" || t.Status == "Closed") ?? 0);
+
+    bool hasProfilePic = !string.IsNullOrEmpty(Model.ProfilePicturePath) && System.IO.File.Exists(System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "wwwroot", Model.ProfilePicturePath.TrimStart('/')));
+    var profilePicUrl = hasProfilePic ? Model.ProfilePicturePath : Url.Content("~/images/person-circle.svg");
+}
+
+<style>
+    .avatar-wrapper { position: relative; width: 120px; height: 120px; margin: 0 auto; border-radius: 50%; overflow: hidden; background-color: var(--bs-secondary-bg); border: 2px solid var(--mc-border); cursor: pointer; }
+    .avatar-image { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-image.default-svg { filter: brightness(0) invert(0.6); padding: 10px; }
+    .avatar-overlay { position: absolute; inset: 0; background-color: rgba(9,33,54,0.68); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; opacity: 0; transition: opacity 0.25s ease; }
+    .avatar-wrapper:hover .avatar-overlay { opacity: 1; }
+</style>
+
+<div class="container main-container">
+    <form asp-action="UpdateProfile" method="post" enctype="multipart/form-data" id="profileForm">
+        <input type="hidden" name="Id" value="@Model.Id" />
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="mc-card text-center h-100">
+                    <div class="avatar-wrapper mb-3" onclick="document.getElementById('profilePicInput').click()">
+                        <img src="@profilePicUrl" id="avatarPreview" class="avatar-image @(!hasProfilePic ? "default-svg" : "")" alt="Profile Picture" />
+                        <div class="avatar-overlay"><i class="bi bi-camera-fill fs-4"></i><span class="small mt-1 fw-bold">Change</span></div>
+                    </div>
+                    <input type="file" id="profilePicInput" name="ProfilePicture" accept=".jpg,.jpeg,.png" class="d-none" onchange="previewImage(this)" />
+
+                    <h4 class="fw-bold mb-1">@Model.FirstName @Model.LastName</h4>
+                    <p class="text-muted mb-3">
+                        <span class="badge @roleBadgeClass me-1">@roleDisplayName</span>
+                        @(Model.Department?.Name ?? "No Ward")
+                    </p>
+
+                    <div class="badge @(Model.IsActive ? "bg-success-subtle text-success border" : "bg-danger-subtle text-danger border") w-100 mb-4 py-2 fs-6">
+                        @(Model.IsActive ? "Active Clinical Account" : "Deactivated Account")
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted">@(isITStaff ? "Assigned Active Tickets" : "Open Tickets")</span>
+                        <span class="badge bg-primary rounded-pill">@activeTicketsCount</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Resolved Tickets</span>
+                        <span class="badge bg-secondary rounded-pill">@completedTicketsCount</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="mc-card h-100">
+                    <h4 class="fw-bold mb-4"><i class="bi bi-gear text-primary me-2"></i>Account &amp; Ward Contact Settings</h4>
+
+                    @if (TempData["ProfileSuccess"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show shadow-sm">
+                            <i class="bi bi-check-circle-fill me-2"></i> @TempData["ProfileSuccess"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show shadow-sm">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small fw-bold">FIRST NAME</label>
+                            <input type="text" name="FirstName" class="form-control" value="@Model.FirstName" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small fw-bold">LAST NAME</label>
+                            <input type="text" name="LastName" class="form-control" value="@Model.LastName" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">INSTITUTIONAL EMAIL</label>
+                        <input type="email" class="form-control" value="@Model.Email" readonly>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-bold">WARD PHONE EXTENSION (Displayed on Tickets)</label>
+                        <div class="input-group">
+                            <select class="form-select" id="countryCode" style="max-width: 120px;" onchange="updateHiddenPhone()">
+                                <option value="+40" selected>+40 RO</option>
+                                <option value="Ext.">Ext.</option>
+                                <option value="+44">+44 UK</option>
+                            </select>
+                            <input type="text" id="phoneDigits" class="form-control" placeholder="251-400-101" oninput="updateHiddenPhone()">
+                            <input type="hidden" name="PhoneNumber" id="fullPhoneNumber" value="@Model.PhoneNumber">
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h5 class="fw-bold mb-3">Notification Preferences</h5>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" asp-for="EmailNotificationsEnabled">
+                        <label class="form-check-label" asp-for="EmailNotificationsEnabled">Email alerts on ticket status changes</label>
+                    </div>
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" asp-for="PushNotificationsEnabled">
+                        <label class="form-check-label" asp-for="PushNotificationsEnabled">In-app dashboard notification banners</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                        <i class="bi bi-save me-2"></i>Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var img = document.getElementById('avatarPreview');
+                    img.src = e.target.result;
+                    img.classList.remove('default-svg');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        $(document).ready(function () {
+            var fullPhone = $('#fullPhoneNumber').val();
+            if (fullPhone) {
+                var parts = fullPhone.split(' ');
+                if (parts.length > 1) {
+                    $('#countryCode').val(parts[0]);
+                    $('#phoneDigits').val(parts.slice(1).join(' '));
+                } else {
+                    $('#phoneDigits').val(fullPhone);
+                }
+            }
+        });
+    </script>
+}

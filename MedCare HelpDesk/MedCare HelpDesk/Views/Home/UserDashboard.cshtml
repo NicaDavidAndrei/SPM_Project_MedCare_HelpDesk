@@ -1,0 +1,154 @@
+@using MedCare_HelpDesk.Models
+@using MedCare_HelpDesk.Services
+@{
+    ViewData["Title"] = "Ward Clinical Dashboard";
+    var notifications = ViewBag.Notifications as List<TicketNotification> ?? new List<TicketNotification>();
+    var wardTickets = ViewBag.WardTickets as List<Ticket> ?? new List<Ticket>();
+    var quickGuides = ViewBag.QuickGuides as List<KnowledgeArticle> ?? new List<KnowledgeArticle>();
+}
+
+<div class="container main-container">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="bi bi-heart-pulse text-primary me-2"></i>Ward Support Command</h2>
+            <p class="text-muted mb-0">Assigned Ward: <strong class="text-body">@ViewBag.WardName</strong> &bull; Submit technical faults in under 60 seconds.</p>
+        </div>
+        <a asp-controller="Tickets" asp-action="SubmitTicket" class="btn btn-danger rounded-pill px-4 shadow-sm">
+            <i class="bi bi-plus-circle-fill me-2"></i>Report Urgent Fault
+        </a>
+    </div>
+
+    @if (notifications.Any())
+    {
+        <div class="mb-4 d-flex flex-column gap-2">
+            @foreach (var n in notifications)
+            {
+                <div class="alert alert-info border shadow-sm d-flex justify-content-between align-items-center flex-wrap gap-2 mb-0">
+                    <div>
+                        <i class="bi bi-bell-fill text-primary me-2"></i>
+                        <strong>Ticket Update:</strong> @n.Message
+                    </div>
+                    <form asp-controller="Home" asp-action="MarkNotificationRead" method="post" class="m-0">
+                        <input type="hidden" name="notificationId" value="@n.Id" />
+                        <input type="hidden" name="ticketId" value="@n.TicketId" />
+                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3">Open &amp; Dismiss</button>
+                    </form>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <a asp-controller="Tickets" asp-action="SubmitTicket" class="text-decoration-none">
+                <div class="stat-card card h-100 p-4 mc-kpi-rail mc-kpi-rail-danger">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="card-title text-danger mb-1">Fast Intake</div>
+                            <h5 class="fw-bold mb-1">Report Problem (&lt;60s)</h5>
+                            <p class="text-muted small mb-0">Attach photo/PDF &amp; trigger 2h–24h SLA.</p>
+                        </div>
+                        <span class="mc-kpi-icon bg-danger-subtle text-danger"><i class="bi bi-plus-circle-dotted"></i></span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a asp-controller="Tickets" asp-action="MyTickets" class="text-decoration-none">
+                <div class="stat-card card h-100 p-4 mc-kpi-rail mc-kpi-rail-primary">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="card-title text-primary mb-1">Shift Handoff</div>
+                            <h5 class="fw-bold mb-1">Ward &amp; My Tickets</h5>
+                            <p class="text-muted small mb-0">Inspect shared ward faults across shifts.</p>
+                        </div>
+                        <span class="mc-kpi-icon bg-primary-subtle text-primary"><i class="bi bi-ticket-detailed"></i></span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a asp-controller="KnowledgeBase" asp-action="Index" class="text-decoration-none">
+                <div class="stat-card card h-100 p-4 mc-kpi-rail mc-kpi-rail-warning">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="card-title text-warning mb-1">Self-Service</div>
+                            <h5 class="fw-bold mb-1">Knowledge Base</h5>
+                            <p class="text-muted small mb-0">3-step monitor, pump &amp; printer fixes.</p>
+                        </div>
+                        <span class="mc-kpi-icon bg-warning-subtle text-warning"><i class="bi bi-lightbulb"></i></span>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="mc-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-hospital text-primary me-2"></i>Active Ward Tickets</h5>
+                    <a asp-controller="Tickets" asp-action="MyTickets" class="btn btn-sm btn-outline-primary rounded-pill">View All</a>
+                </div>
+                @if (wardTickets.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var t in wardTickets)
+                        {
+                            var sla = TicketService.EvaluateSlaHealthStatic(t);
+                            int pct = (int)Math.Round(sla.RemainingRatio * 100);
+                            string barColor = sla.IsBreached ? "bg-danger" : (sla.IsApproaching ? "bg-warning" : "bg-success");
+                            <a asp-controller="Tickets" asp-action="ViewTicket" asp-route-id="@t.Id" class="list-group-item list-group-item-action px-0 py-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div>
+                                        <span class="mc-ticket-code me-2">@(t.TicketCode ?? $"#{t.Id}")</span>
+                                        <span class="fw-bold">@t.Title</span>
+                                    </div>
+                                    @if (!sla.IsResolved && sla.IsBreached)
+                                    {
+                                        <span class="badge bg-danger">SLA Breached</span>
+                                    }
+                                    else if (!sla.IsResolved && sla.IsApproaching)
+                                    {
+                                        <span class="badge bg-warning text-dark">Warning &lt;=25%</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success-subtle text-success border">@(sla.IsResolved ? "SLA Met" : "On Track")</span>
+                                    }
+                                </div>
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span>@(t.Department?.Name ?? "Ward") &bull; @t.Priority (@t.Status)</span>
+                                    <span class="mc-mono">@(t.DueDate?.ToString("dd MMM HH:mm") ?? "") UTC</span>
+                                </div>
+                                <div class="mc-sla-bar">
+                                    <div class="progress-bar @barColor" style="width:@(sla.IsBreached ? 100 : Math.Max(8, pct))%;height:100%;"></div>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">No active tickets in your ward right now.</p>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="mc-card h-100">
+                <h5 class="fw-bold mb-3"><i class="bi bi-journal-medical text-primary me-2"></i>Quick Ward Guides</h5>
+                <div class="list-group list-group-flush">
+                    @foreach (var g in quickGuides)
+                    {
+                        <a asp-controller="KnowledgeBase" asp-action="Index" asp-route-searchString="@g.Title" class="list-group-item list-group-item-action px-0 py-3">
+                            <div class="fw-bold small"><i class="bi @g.IconClass @g.ColorClass me-2"></i>@g.Title</div>
+                            <small class="text-muted">@g.Category &bull; Updated @g.UpdatedAt.ToString("dd MMM yyyy")</small>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<partial name="_BackToTop" />

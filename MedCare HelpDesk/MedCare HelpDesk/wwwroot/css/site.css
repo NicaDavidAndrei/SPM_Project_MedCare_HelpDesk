@@ -1,0 +1,475 @@
+/* ==========================================================================
+   MedCare HelpDesk - REGINA MARIA Clinical Design System
+   Distinct Clinical Teal & Surgical Navy Shell + ICU Night-Shift Dark Theme
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --mc-bg: #eef4f7;
+    --mc-surface: #ffffff;
+    --mc-surface-soft: #f5f9fb;
+    --mc-sidebar: #092136;
+    --mc-sidebar-hover: rgba(20, 184, 166, 0.14);
+    --mc-sidebar-active: rgba(20, 184, 166, 0.24);
+    --mc-teal: #0d9488;
+    --mc-teal-dark: #0f766e;
+    --mc-teal-light: #ccfbf1;
+    --mc-navy: #0f2942;
+    --mc-border: #dce7ed;
+    --mc-text: #132a3e;
+    --mc-muted: #526a7e;
+    --mc-shadow: 0 8px 24px -8px rgba(15, 41, 66, 0.09);
+}
+
+[data-bs-theme="dark"] {
+    --mc-bg: #07131f;
+    --mc-surface: #0e2236;
+    --mc-surface-soft: #132c45;
+    --mc-sidebar: #050f1a;
+    --mc-sidebar-hover: rgba(45, 212, 191, 0.14);
+    --mc-sidebar-active: rgba(45, 212, 191, 0.22);
+    --mc-teal: #14b8a6;
+    --mc-teal-dark: #0d9488;
+    --mc-teal-light: rgba(20, 184, 166, 0.18);
+    --mc-navy: #e2eef7;
+    --mc-border: rgba(148, 184, 218, 0.16);
+    --mc-text: #e6f0f8;
+    --mc-muted: #98b1c7;
+    --mc-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.45);
+}
+
+input::-ms-reveal,
+input::-ms-clear {
+    display: none;
+}
+
+html {
+    font-size: 14px;
+    overflow-y: scroll;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 15px;
+    }
+}
+
+body {
+    background-color: var(--mc-bg);
+    color: var(--mc-text);
+    font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    letter-spacing: -0.01em;
+}
+
+body.modal-open {
+    padding-right: 0 !important;
+}
+
+.mc-mono,
+.mc-ticket-code {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.mc-ticket-code {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    background: var(--mc-navy);
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+[data-bs-theme="dark"] .mc-ticket-code {
+    background: rgba(20, 184, 166, 0.2);
+    color: #5eead4;
+    border: 1px solid rgba(94, 234, 212, 0.3);
+}
+
+/* Primary Clinical Teal overrides for unified brand identity */
+.btn-primary {
+    background-color: var(--mc-teal);
+    border-color: var(--mc-teal);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--mc-teal-dark);
+    border-color: var(--mc-teal-dark);
+    color: #ffffff;
+}
+
+.btn-outline-primary {
+    color: var(--mc-teal);
+    border-color: var(--mc-teal);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--mc-teal);
+    border-color: var(--mc-teal);
+    color: #ffffff;
+}
+
+.text-primary {
+    color: var(--mc-teal) !important;
+}
+
+.bg-primary {
+    background-color: var(--mc-teal) !important;
+}
+
+/* ==========================================================================
+   Authenticated Shell: Left Clinical Navigation Sidebar + Top Command Bar
+   ========================================================================== */
+.mc-app-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.mc-sidebar {
+    width: 264px;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, var(--mc-sidebar) 0%, #061829 100%);
+    color: #dbeafe;
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    z-index: 1040;
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.mc-brand-box {
+    padding: 1.25rem 1.25rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mc-brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.35);
+}
+
+.mc-role-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    margin-top: 0.65rem;
+}
+
+.mc-nav-list {
+    padding: 1rem 0.75rem;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.mc-nav-section {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #7da1c4;
+    padding: 0.5rem 0.75rem 0.35rem;
+    font-weight: 700;
+}
+
+.mc-side-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.62rem 0.85rem;
+    border-radius: 10px;
+    color: #bfd4e8;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.92rem;
+    margin-bottom: 0.25rem;
+    border-left: 3px solid transparent;
+    transition: all 0.18s ease;
+}
+
+.mc-side-link:hover {
+    background-color: var(--mc-sidebar-hover);
+    color: #ffffff;
+}
+
+.mc-side-link.active-page {
+    background-color: var(--mc-sidebar-active);
+    color: #ffffff;
+    font-weight: 700;
+    border-left-color: #2dd4bf;
+}
+
+.mc-sidebar-hotline {
+    margin: 0.75rem;
+    padding: 0.85rem;
+    border-radius: 12px;
+    background: rgba(220, 38, 38, 0.14);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    color: #fecaca;
+    font-size: 0.78rem;
+}
+
+.mc-workspace {
+    flex-grow: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.mc-topbar {
+    background-color: var(--mc-surface);
+    border-bottom: 1px solid var(--mc-border);
+    padding: 0.65rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+.mc-main-canvas {
+    padding: 1.5rem;
+    flex-grow: 1;
+}
+
+.main-container {
+    padding-top: 0.5rem;
+    padding-bottom: 2.5rem;
+    max-width: 1320px;
+}
+
+@media (max-width: 991.98px) {
+    .mc-sidebar {
+        position: fixed;
+        left: -272px;
+        transition: left 0.24s ease;
+    }
+    .mc-sidebar.mc-open {
+        left: 0;
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.45);
+    }
+    .mc-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(6, 17, 29, 0.55);
+        z-index: 1035;
+    }
+    .mc-backdrop.show {
+        display: block;
+    }
+}
+
+/* ==========================================================================
+   Guest Public Triage Header & Hero Cards
+   ========================================================================== */
+.hotline-banner {
+    background: linear-gradient(90deg, #991b1b 0%, #7f1d1d 100%);
+    color: #fef2f2;
+    font-size: 0.82rem;
+    letter-spacing: 0.01em;
+}
+
+.mc-guest-nav {
+    background: var(--mc-surface);
+    border-bottom: 1px solid var(--mc-border);
+    box-shadow: 0 2px 12px rgba(15, 41, 66, 0.05);
+}
+
+.mc-clinical-hero {
+    background: linear-gradient(135deg, #092136 0%, #0f3a54 55%, #0d9488 100%);
+    color: #ffffff;
+    border-radius: 18px;
+    padding: 2.25rem;
+    box-shadow: 0 18px 36px -14px rgba(9, 33, 54, 0.42);
+}
+
+/* ==========================================================================
+   Cards, KPI Tiles, SLA Progress Bars & Form Controls
+   ========================================================================== */
+.content-card,
+.mc-card {
+    background-color: var(--mc-surface);
+    color: var(--mc-text);
+    border-radius: 14px;
+    box-shadow: var(--mc-shadow);
+    padding: 1.5rem;
+    border: 1px solid var(--mc-border);
+}
+
+.stat-card {
+    background-color: var(--mc-surface);
+    color: var(--mc-text);
+    border-radius: 14px;
+    border: 1px solid var(--mc-border);
+    box-shadow: var(--mc-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 28px -10px rgba(13, 148, 136, 0.22);
+}
+
+.stat-card .card-title {
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.mc-kpi-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.mc-kpi-rail {
+    border: 1px solid var(--mc-border) !important;
+    border-left-width: 4px !important;
+}
+.mc-kpi-rail-danger { border-left-color: #dc2626 !important; }
+.mc-kpi-rail-primary { border-left-color: var(--mc-teal) !important; }
+.mc-kpi-rail-warning { border-left-color: #d97706 !important; }
+.mc-kpi-rail-success { border-left-color: #059669 !important; }
+.mc-kpi-rail-info { border-left-color: #0284c7 !important; }
+
+.mc-chip-admin { background: rgba(220, 38, 38, 0.22); color: #fca5a5; border: 1px solid rgba(248, 113, 113, 0.45); }
+.mc-chip-agent { background: rgba(16, 185, 129, 0.22); color: #86efac; border: 1px solid rgba(74, 222, 128, 0.45); }
+.mc-chip-user { background: rgba(6, 182, 212, 0.22); color: #67e8f9; border: 1px solid rgba(34, 211, 238, 0.45); }
+
+.mc-sla-bar {
+    height: 6px;
+    border-radius: 999px;
+    background-color: var(--mc-border);
+    overflow: hidden;
+}
+
+/* Split-Screen Clinical Login Page */
+.mc-login-split {
+    display: flex;
+    min-height: calc(100vh - 34px);
+}
+
+.mc-login-showcase {
+    background: linear-gradient(145deg, #071c2f 0%, #0d3b54 55%, #0d9488 100%);
+    color: #ffffff;
+}
+
+/* SLA & Critical Priority Badges */
+.bg-critical {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+}
+
+.text-critical {
+    color: #dc2626 !important;
+}
+
+.password-toggle-icon {
+    cursor: pointer;
+}
+
+#btnBackToTop {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+#btnBackToTop.show {
+    display: flex;
+    opacity: 1;
+}
+
+/* Table & Dark Mode Contrast Guards */
+.table {
+    color: var(--mc-text);
+}
+
+.table thead th {
+    background-color: var(--mc-surface-soft) !important;
+    color: var(--mc-muted) !important;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--mc-border) !important;
+}
+
+[data-bs-theme="dark"] .bg-white,
+[data-bs-theme="dark"] .bg-light,
+[data-bs-theme="dark"] .bg-light-subtle {
+    background-color: var(--mc-surface-soft) !important;
+    color: var(--mc-text) !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+    color: var(--mc-text) !important;
+}
+
+[data-bs-theme="dark"] .text-muted,
+[data-bs-theme="dark"] .text-secondary,
+[data-bs-theme="dark"] .text-body-secondary {
+    color: var(--mc-muted) !important;
+}
+
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select,
+[data-bs-theme="dark"] .input-group-text {
+    background-color: #091827 !important;
+    border-color: var(--mc-border) !important;
+    color: var(--mc-text) !important;
+}
+
+[data-bs-theme="dark"] .list-group-item {
+    background-color: var(--mc-surface) !important;
+    border-color: var(--mc-border) !important;
+    color: var(--mc-text) !important;
+}
+
+[data-bs-theme="dark"] .modal-content,
+[data-bs-theme="dark"] .modal-header,
+[data-bs-theme="dark"] .modal-footer {
+    background-color: var(--mc-surface) !important;
+    border-color: var(--mc-border) !important;
+    color: var(--mc-text) !important;
+}
+
+[data-bs-theme="dark"] .btn-light {
+    background-color: var(--mc-surface-soft);
+    border-color: var(--mc-border);
+    color: var(--mc-text);
+}

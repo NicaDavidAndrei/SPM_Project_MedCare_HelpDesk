@@ -1,0 +1,125 @@
+@model IEnumerable<MedCare_HelpDesk.Models.Ticket>
+@{
+    ViewData["Title"] = "Hospital Admin Overview";
+    var wardGroups = Model
+        .GroupBy(t => t.Department?.Name ?? "Unassigned")
+        .Select(g => new { Ward = g.Key, Total = g.Count(), Open = g.Count(x => x.Status != "Resolved" && x.Status != "Closed") })
+        .OrderByDescending(x => x.Open)
+        .ToList();
+}
+
+<div class="container main-container">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="bi bi-grid-1x2-fill text-primary me-2"></i>Hospital Governance Command</h2>
+            <p class="text-muted mb-0">Global SLA telemetry, active ward saturation, and directory administration.</p>
+        </div>
+        <a asp-controller="Home" asp-action="AgentDashboard" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="bi bi-activity me-1"></i>Operational SLA Queue
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card card h-100 p-3 mc-kpi-rail mc-kpi-rail-primary" onclick="window.location.href='@Url.Action("AllTickets", "Tickets")'">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="card-title text-primary">Open / Active</div>
+                        <div class="display-6 fw-bold">@ViewBag.OpenTicketsCount / @ViewBag.InProgressCount</div>
+                    </div>
+                    <span class="mc-kpi-icon bg-primary-subtle text-primary"><i class="bi bi-ticket-detailed-fill"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card card h-100 p-3 mc-kpi-rail mc-kpi-rail-danger" onclick="window.location.href='@Url.Action("AllTickets", "Tickets", new { slaFilter = "Breached" })'">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="card-title text-danger">SLA Breached</div>
+                        <div class="display-6 fw-bold text-danger">@ViewBag.SlaBreachedCount</div>
+                    </div>
+                    <span class="mc-kpi-icon bg-danger-subtle text-danger"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card card h-100 p-3 mc-kpi-rail mc-kpi-rail-success">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="card-title text-success">SLA Compliance</div>
+                        <div class="display-6 fw-bold text-success">@ViewBag.SlaCompliancePct%</div>
+                    </div>
+                    <span class="mc-kpi-icon bg-success-subtle text-success"><i class="bi bi-shield-check"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card card h-100 p-3 mc-kpi-rail mc-kpi-rail-info" onclick="window.location.href='@Url.Action("Index", "Users")'">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="card-title text-info">Staff &amp; Load</div>
+                        <div class="display-6 fw-bold">@ViewBag.ActiveUsersCount <small class="fs-6 text-muted">(@ViewBag.TotalTeamWorkload pts)</small></div>
+                    </div>
+                    <span class="mc-kpi-icon bg-info-subtle text-info"><i class="bi bi-people-fill"></i></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="mc-card h-100">
+                <h5 class="fw-bold mb-3"><i class="bi bi-bar-chart-line text-primary me-2"></i>Hospital Ward Workload Breakdown</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead><tr><th>Hospital Ward</th><th>Open / Active</th><th>Total</th><th style="width:35%;">Saturation</th></tr></thead>
+                        <tbody>
+                            @foreach (var w in wardGroups)
+                            {
+                                int share = w.Total > 0 ? (int)Math.Round((double)w.Open / w.Total * 100) : 0;
+                                <tr>
+                                    <td class="fw-bold">@w.Ward</td>
+                                    <td><span class="badge bg-primary rounded-pill">@w.Open</span></td>
+                                    <td class="mc-mono">@w.Total</td>
+                                    <td>
+                                        <div class="mc-sla-bar">
+                                            <div class="progress-bar @(w.Open > 0 ? "bg-warning" : "bg-success")" style="width:@Math.Max(10, share)%;height:100%;"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="mc-card h-100">
+                <h5 class="fw-bold mb-3"><i class="bi bi-sliders text-primary me-2"></i>Governance Directory</h5>
+                <div class="d-grid gap-2">
+                    <a asp-controller="Users" asp-action="Index" class="btn btn-outline-primary text-start d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-people me-2"></i>Manage Staff Accounts (Admin / Agent / User)</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                    <a asp-controller="Departments" asp-action="Index" class="btn btn-outline-primary text-start d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-building me-2"></i>Configure Hospital Wards &amp; Critical Care</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                    <a asp-controller="Categories" asp-action="Index" class="btn btn-outline-primary text-start d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-tags me-2"></i>Configure Problem Categories &amp; Specialties</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                    <a asp-controller="KnowledgeArticles" asp-action="Index" class="btn btn-outline-primary text-start d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-journals me-2"></i>Moderate All Knowledge Base Guides</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                    <a asp-controller="Tickets" asp-action="Index" class="btn btn-outline-danger text-start d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-ticket-detailed me-2"></i>Global Tickets CRUD Administration</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
